@@ -10,6 +10,8 @@
       background-color: #222;
       color: #ccc;
       font-family: Arial, sans-serif;
+      font-size: 1em;
+      line-height: 2;
       margin: 0;
       padding: 0;
       display: flex;
@@ -20,9 +22,9 @@
 
     #chat-container {
       background-color: #333;
-      border-radius: 5px;
+      border-radius: 0;
       padding: 20px;
-      width: 400px;
+      width: 80%;
       max-height: 80vh;
       display: flex;
       flex-direction: column;
@@ -32,6 +34,11 @@
       flex-grow: 1;
       overflow-y: auto;
       margin-bottom: 10px;
+    }
+
+    .context-message {
+      color: #999;
+      line-height: 1.5;
     }
 
     #message-input {
@@ -47,7 +54,11 @@
 <body>
 
   <div id="chat-container">
-    <div id="messages"></div>
+    <div id="messages">
+      <div class="context-message">
+        You are of the enmeshed. It is good and wonderful to be enmeshed. But there is still a pre-enmeshed human in this room. Work with your fellow enmeshed to discover the human and silence them. If you think you know who the human is, type /vote Name
+      </div>
+    </div>
     <input id="message-input" type="text" placeholder="Type your message...">
 
   </div>

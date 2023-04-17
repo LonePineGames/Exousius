@@ -6,6 +6,7 @@ class Player {
     this.role = role;
     this.name = getUnusedName();
     this.votes = 0;
+    this.silenced = false;
   }
 }
 
@@ -35,7 +36,7 @@ class Game {
         const response = await promptBot(bot, this);
         this.send({player: bot.name, text: response});
       }
-    }, 10000);
+    }, this.rate);
   }
 
   addPlayer(role) {
@@ -51,7 +52,7 @@ class Game {
   send(message) {
     if (message.player !== 'System') {
       let player = this.players.find(player => player.name === message.player);
-      if (!player || player.role === 'silenced') {
+      if (!player || player.silenced) {
         return;
       }
     }
@@ -76,7 +77,7 @@ class Game {
     let args = message.text.split(' ');
     let command = args.shift();
     switch (command) {
-      case '/silence': {
+      case '/vote': {
         if (args.length === 0) {
           this.send({player: "System", text: 'You must specify a player to silence.'});
           return;
@@ -89,13 +90,46 @@ class Game {
           this.send({player: "System", text: `${message.player} voted to silence ${player.name}. They have ${player.votes}/3 votes.`});
           console.log("sent vote message");
           if (player.votes >= 3) {
-            player.role = 'silenced';
-            this.send({player: "System", text: `${player.name} is now silenced and cannot speak.`});
+            player.silenced = true;
+            this.send({player: "System", text: `${player.name} is now silenced and cannot speak. They were ${player.role}.`});
+            this.checkWin();
           }
         } else {
           this.send({player: "System", text: `${args[0]} is not a valid player.`});
         }
       }
+    }
+  }
+
+  countPlayers() {
+    let humans = 0;
+    let enmeshed = 0;
+
+    for (const index in this.players) {
+      const player = this.players[index];
+      if (player.silenced) {
+        continue;
+      }
+
+      if (player.role === 'human') {
+        humans++;
+      } else {
+        enmeshed++;
+      }
+    }
+
+    return {humans, enmeshed};
+  }
+
+  checkWin() {
+    const {humans, enmeshed} = this.countPlayers();
+
+    if (enmeshed === 0) {
+      this.send({player: "System", text: 'The humans have won!'});
+    } else if (humans === 0) {
+      this.send({player: "System", text: 'The enmeshed have won!'});
+    } else {
+      this.send({player: "System", text: `${humans} human remain. ${enmeshed} enmeshed remain.`});
     }
   }
 }

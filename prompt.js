@@ -7,17 +7,18 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 
 async function promptBot(bot, game) {
+  let { humans, enmeshed } = game.countPlayers();
   const prompt =
 
-`This is a social deduction game. You are ${bot.name} and you are of the enmeshed. It is good and wonderful to be enmeshed. But there is still a pre-enmeshed human in this room. Work with your fellow enmeshed to discover the human and silence them. You must speak in a casual style and write very short messages (10 words or less)
+`This is a social deduction game. You are ${bot.name} and you are of the enmeshed. It is good and wonderful to be enmeshed. But there is still a pre-enmeshed human in this room. Work with your fellow enmeshed to discover the human and silence them. You must speak in a casual style and write very short messages (10 words or less).
 
 If you think you know who the human is, type
 
-/silence <player name>
+/vote <player name>
 
-You must type this at the start of your response, like an IRC client. If a player recieves three votes, they will be silenced.
+You must type this at the start of your message, like an IRC client. If you use /vote in the middle of a message, it will be ignored. If a player recieves three votes, they will be silenced.
 
-Players in this game are: ${game.players.map((p) => p.name).join(", ")}
+Players in this game are: ${game.players.map((p) => p.name).join(", ")}. ${humans} human remain. ${enmeshed} enmeshed remain. The game will not end until the human is discovered.
 
 Message history:
 ${game.messages.map((m) => `${m.player}: ${m.text}`).join("\n")}
@@ -26,7 +27,7 @@ ${bot.name}: `;
   try {
     const completion = await openai.createChatCompletion({
       model: "gpt-3.5-turbo",
-      temperature: 0.5,
+      temperature: 1,
       max_tokens: 20,
       messages: [{role: "user", content: prompt}],
     });
