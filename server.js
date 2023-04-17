@@ -33,6 +33,7 @@ io.on('connection', (socket) => {
     game.reset();
     player = game.addPlayer("human");
     socket.emit('message', { player: "System", text: `Your name is ${player}.` });
+    socket.emit('message', { player: "System", text: `Current players are ${game.players.join(', ')}.`});
   });
 });
 

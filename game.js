@@ -52,9 +52,10 @@ class Game {
     this.messages = [];
     this.messageHandlers = [];
     this.ended = false;
-    this.rate = 4000;
+    this.rate = 6000;
+    this.messagesSinceVote = 0;
 
-    let numEnmeshed = 9;
+    let numEnmeshed = 4 + Math.floor(Math.random() * 3);
     for (let i = 0; i < numEnmeshed; i++) {
       this.addPlayer('enmeshed');
     }
@@ -66,10 +67,34 @@ class Game {
         return;
       }
 
-      const botIndex = Math.floor(Math.random() * this.players.length);
-      const bot = this.players[botIndex];
+      let bot = null;
+      for (let i = this.messages.length - 1; i >= 0; i--) {
+        const message = this.messages[i];
+        const words = message.text.split(' ');
+        for (const word of words) {
+          const playerName = word.replace(/[^a-zA-Z]/g, '');
+          bot = this.players.find(player => player.name === playerName);
+          if (bot) {
+            break;
+          }
+        }
+        if (bot) {
+          break;
+        }
+      }
+
+      let good = bot && bot.role === 'enmeshed' && (!bot.silenced || this.ended);
+      if (!good || Math.random() < 0.5) {
+        const botIndex = Math.floor(Math.random() * this.players.length);
+        bot = this.players[botIndex];
+      }
 
       if (bot.role === 'enmeshed' && (!bot.silenced || this.ended)) {
+        if (!this.ended && this.messagesSinceVote > 10) {
+          let players = this.players.filter(player => !player.silenced);
+          let player = players[Math.floor(Math.random() * players.length)];
+          this.send({player: bot.name, text: '/vote ' + player.name});
+        }
         const response = await promptBot(bot, this);
         if (response.length > 0) {
           this.send({player: bot.name, text: response});
@@ -94,6 +119,9 @@ class Game {
       if (!player || player.silenced) {
         return;
       }
+    }
+    if (message.text.startsWith('/end')) {
+      return;
     }
     console.log("SEND", message);
     this.messages.push(message);
@@ -125,9 +153,10 @@ class Game {
           return;
         }
         player.votes.push(message.player);
-        const {majority} = this.countPlayers();
+        const {majority, total} = this.countPlayers();
+        this.messagesSinceVote = 0;
         if (player.votes.length < majority) {
-          this.send({player: "System", text: `${message.player} voted to silence ${player.name}. ${player.name} has ${player.votes.length} votes. ${majority} votes will silence the player.`});
+          this.send({player: "System", text: `${message.player} voted to silence ${player.name}. ${player.name} has ${player.votes.length} out of ${majority} votes needed to silence the player. There are ${total} players remaining.`});
         } else {
           this.send({player: "System", text: `${message.player} voted to silence ${player.name}. ${player.name} has ${player.votes.length} votes.`});
           this.checkSilencePlayer(player);
@@ -137,6 +166,8 @@ class Game {
         console.trace();
         this.send({player: "System", text: `${playerName} is not a valid player.`});
       }
+    } else {
+      this.messagesSinceVote++;
     }
   }
 
@@ -146,14 +177,16 @@ class Game {
       player.silenced = true;
       this.send({player: "System", text: `${player.name} is now silenced and cannot speak. They were ${player.role}.`});
 
-      for (const index in this.players) {
-        const player = this.players[index];
-        player.votes = [];
+      if (majority <= 2) {
+        this.send({player: "System", text: `Votes have been reset.`});
+        for (const index in this.players) {
+          const player = this.players[index];
+          player.votes = [];
+        }
       }
 
       this.checkWin();
       if (!this.ended) {
-        this.send({player: "System", text: `Votes have been reset.`});
         this.send({player: "System", text: `Remaining players: ${this.players.filter(player => !player.silenced).map(player => player.name).join(', ')}.`});
       }
     }
