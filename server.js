@@ -12,6 +12,8 @@ game.promptLoop();
 io.on('connection', (socket) => {
   console.log('socket connect');
   let player = game.addPlayer("human");
+  socket.emit('message', { player: "System", text: `Your name is ${player}.` });
+
   game.onMessage((message) => {
     socket.emit('message', message);
   });
@@ -24,6 +26,13 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('socket disconnect');
     game.removePlayer(player);
+  });
+
+  socket.on('reset', () => {
+    console.log('reset');
+    game.reset();
+    player = game.addPlayer("human");
+    socket.emit('message', { player: "System", text: `Your name is ${player}.` });
   });
 });
 

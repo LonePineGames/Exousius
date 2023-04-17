@@ -31,9 +31,20 @@
     }
 
     #messages {
+      position: relative;
       flex-grow: 1;
       overflow-y: auto;
       margin-bottom: 10px;
+    }
+
+    .reset {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background-color: #333;
+      color: #ccc;
+      padding: 10px;
+      cursor: pointer;
     }
 
     .context-message {
@@ -56,6 +67,9 @@
 
   <div id="chat-container">
     <div id="messages">
+      <div class="reset" onClick="socket.emit('reset')">
+        Reset
+      </div>
       <div class="context-message">
         You are of the enmeshed. It is good and wonderful to be enmeshed. But there is still a pre-enmeshed human in this room. Work with your fellow enmeshed to discover the human and silence them. If you think you know who the human is, type /vote Name
       </div>
@@ -85,6 +99,14 @@
         messages.scrollTop = messages.scrollHeight;
       }, 0); // Wait for the DOM to update
     });
+
+    function reset() {
+      const messages = document.getElementById('messages');
+      // Remove all but the first two children
+      while (messages.children.length > 2) {
+        messages.removeChild(messages.lastChild);
+      }
+    }
 
   </script>
 </body>

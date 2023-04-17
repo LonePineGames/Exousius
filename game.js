@@ -1,24 +1,60 @@
 const { getUnusedName } = require('./names');
 const { promptBot } = require('./prompt');
 
+
+const personalities = [
+  'paranoid',
+  'defensive',
+  'aggressive',
+  'passive',
+  'quiet',
+  'talkative',
+  'pessimistic',
+  'empathetic',
+  'scared',
+  'cold',
+  'sensitive',
+  'dumb',
+  'serious',
+  'troll',
+  'intuitive',
+  '"votes for everyone"',
+  '"always votes"',
+  'confused',
+  'human lover',
+  'secretly not enmeshed',
+  '"admits to being human"',
+  '"admits to not hating humans"',
+  'enmeshed fanatic',
+  'fanatical human hater',
+  '"accuses everyone"',
+  'natural leader',
+  'natural follower',
+];
+
 class Player {
   constructor(role) {
     this.role = role;
     this.name = getUnusedName();
     this.votes = [];
     this.silenced = false;
+    this.personality = personalities[Math.floor(Math.random() * personalities.length)];
   }
 }
 
 class Game {
   constructor() {
+    this.reset();
+  }
+
+  reset() {
     this.players = [];
     this.messages = [];
-    this.rate = 4000;
     this.messageHandlers = [];
     this.ended = false;
+    this.rate = 4000;
 
-    let numEnmeshed = 5;
+    let numEnmeshed = 9;
     for (let i = 0; i < numEnmeshed; i++) {
       this.addPlayer('enmeshed');
     }
@@ -33,9 +69,11 @@ class Game {
       const botIndex = Math.floor(Math.random() * this.players.length);
       const bot = this.players[botIndex];
 
-      if (bot.role === 'enmeshed' && !bot.silenced) {
+      if (bot.role === 'enmeshed' && (!bot.silenced || this.ended)) {
         const response = await promptBot(bot, this);
-        this.send({player: bot.name, text: response});
+        if (response.length > 0) {
+          this.send({player: bot.name, text: response});
+        }
       }
     }, this.rate);
   }
@@ -78,15 +116,25 @@ class Game {
       const playerName = vote.replace(/[^a-zA-Z]/g, '');
       const player = this.players.find(player => player.name === playerName);
       if (player) {
+        if (player.silenced) {
+          this.send({player: "System", text: `${player.name} is already silenced.`});
+          return;
+        }
         if (player.votes.includes(message.player)) {
           this.send({player: "System", text: `You have already voted to silence ${player.name}.`});
           return;
         }
         player.votes.push(message.player);
         const {majority} = this.countPlayers();
-        this.send({player: "System", text: `${message.player} voted to silence ${player.name}. They have ${player.votes.length}/${majority} votes.`});
-        this.checkSilencePlayer(player);
+        if (player.votes.length < majority) {
+          this.send({player: "System", text: `${message.player} voted to silence ${player.name}. ${player.name} has ${player.votes.length} votes. ${majority} votes will silence the player.`});
+        } else {
+          this.send({player: "System", text: `${message.player} voted to silence ${player.name}. ${player.name} has ${player.votes.length} votes.`});
+          this.checkSilencePlayer(player);
+        }
       } else {
+        // log a stack trace
+        console.trace();
         this.send({player: "System", text: `${playerName} is not a valid player.`});
       }
     }
@@ -102,9 +150,12 @@ class Game {
         const player = this.players[index];
         player.votes = [];
       }
-      this.send({player: "System", text: `Votes have been reset.`});
 
       this.checkWin();
+      if (!this.ended) {
+        this.send({player: "System", text: `Votes have been reset.`});
+        this.send({player: "System", text: `Remaining players: ${this.players.filter(player => !player.silenced).map(player => player.name).join(', ')}.`});
+      }
     }
   }
 
