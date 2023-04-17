@@ -7,6 +7,7 @@ const Game = require('./game');
 app.use(express.static('public'));
 
 const game = new Game();
+game.promptLoop();
 
 io.on('connection', (socket) => {
   console.log('socket connect');
