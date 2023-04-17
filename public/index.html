@@ -63,11 +63,15 @@
       }
     });
 
-    socket.on('message', (message) => {
+    socket.on('message', async (message) => {
       const messages = document.getElementById('messages');
       const messageElement = document.createElement('div');
       messageElement.innerText = message.player + ': ' + message.text;
       messages.appendChild(messageElement);
+
+      setTimeout(() => {
+        messages.scrollTop = messages.scrollHeight;
+      }, 0); // Wait for the DOM to update
     });
 
   </script>

@@ -9,9 +9,13 @@ const openai = new OpenAIApi(configuration);
 async function promptBot(bot, game) {
   const prompt =
 
-`This is a social deduction game. You are ${bot.name} and you are of the enmeshed. It is good and wonderful to be enmeshed. But there is still a pre-enmeshed human in this room. Work with your fellow enmeshed to discover the human. You must speak in a casual style and write very short messages (10 words or less)
+`This is a social deduction game. You are ${bot.name} and you are of the enmeshed. It is good and wonderful to be enmeshed. But there is still a pre-enmeshed human in this room. Work with your fellow enmeshed to discover the human and silence them. You must speak in a casual style and write very short messages (10 words or less)
 
-If you think you know who the human is, type /enmesh <player name>
+If you think you know who the human is, type
+
+/silence <player name>
+
+You must type this at the start of your response, like an IRC client. If a player recieves three votes, they will be silenced.
 
 Players in this game are: ${game.players.map((p) => p.name).join(", ")}
 
