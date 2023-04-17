@@ -13,12 +13,10 @@ io.on('connection', (socket) => {
   console.log('socket connect');
   let player = game.addPlayer("human");
   game.onMessage((message) => {
-    console.log('game message', message);
     socket.emit('message', message);
   });
 
   socket.on('message', (message) => {
-    console.log('socket message', message);
     message.player = player;
     game.send(message);
   });
