@@ -1,40 +1,10 @@
 const { getUnusedName } = require('./names');
-const { promptBot } = require('./prompt');
-
-
-const personalities = [
-  'paranoid',
-  'defensive',
-  'aggressive',
-  'passive',
-  'quiet',
-  'talkative',
-  'pessimistic',
-  'empathetic',
-  'scared',
-  'cold',
-  'sensitive',
-  'dumb',
-  'serious',
-  'troll',
-  'intuitive',
-  '"votes for everyone"',
-  '"always votes"',
-  'confused',
-  'human lover',
-  'secretly not enmeshed',
-  '"admits to being human"',
-  '"admits to not hating humans"',
-  'enmeshed fanatic',
-  'fanatical human hater',
-  '"accuses everyone"',
-  'natural leader',
-  'natural follower',
-];
+const { promptBot, personalities } = require('./prompt');
 
 class Player {
-  constructor(role) {
+  constructor(role, force) {
     this.role = role;
+    this.force = force;
     this.name = getUnusedName();
     this.votes = [];
     this.silenced = false;
@@ -44,20 +14,23 @@ class Player {
 
 class Game {
   constructor() {
+    this.messageHandlers = [];
     this.reset();
   }
 
   reset() {
     this.players = [];
     this.messages = [];
-    this.messageHandlers = [];
     this.ended = false;
     this.rate = 6000;
     this.messagesSinceVote = 0;
 
-    let numEnmeshed = 4 + Math.floor(Math.random() * 3);
+    let numEnmeshed = 3 + Math.floor(Math.random() * 3);
+    if (numEnmeshed > 4) {
+      this.addPlayer('bot', 'human');
+    }
     for (let i = 0; i < numEnmeshed; i++) {
-      this.addPlayer('enmeshed');
+      this.addPlayer('bot', 'enmeshed');
     }
   }
 
@@ -83,13 +56,13 @@ class Game {
         }
       }
 
-      let good = bot && bot.role === 'enmeshed' && (!bot.silenced || this.ended);
+      let good = bot && bot.role === 'bot' && (!bot.silenced || this.ended);
       if (!good || Math.random() < 0.5) {
         const botIndex = Math.floor(Math.random() * this.players.length);
         bot = this.players[botIndex];
       }
 
-      if (bot.role === 'enmeshed' && (!bot.silenced || this.ended)) {
+      if (bot.role === 'bot' && (!bot.silenced || this.ended)) {
         if (!this.ended && this.messagesSinceVote > 10) {
           let players = this.players.filter(player => !player.silenced);
           let player = players[Math.floor(Math.random() * players.length)];
@@ -103,8 +76,9 @@ class Game {
     }, this.rate);
   }
 
-  addPlayer(role) {
-    const player = new Player(role);
+  addPlayer(role, force) {
+    //if (role === 'human') return 'Human';
+    const player = new Player(role, force);
     this.players.push(player);
     return player.name;
   }
@@ -135,7 +109,7 @@ class Game {
   }
 
   humansPresent() {
-    return this.players.some(player => player.role === 'human');
+    return true; //this.players.some(player => player.role === 'human');
   }
 
   handleVote(message) {
@@ -156,7 +130,7 @@ class Game {
         const {majority, total} = this.countPlayers();
         this.messagesSinceVote = 0;
         if (player.votes.length < majority) {
-          this.send({player: "System", text: `${message.player} voted to silence ${player.name}. ${player.name} has ${player.votes.length} out of ${majority} votes needed to silence the player. There are ${total} players remaining.`});
+          this.send({player: "System", text: `${message.player} voted to silence ${player.name}. ${player.votes.length} out of ${majority} votes needed to silence ${player.name}. There are ${total} players remaining.`});
         } else {
           this.send({player: "System", text: `${message.player} voted to silence ${player.name}. ${player.name} has ${player.votes.length} votes.`});
           this.checkSilencePlayer(player);
@@ -175,7 +149,7 @@ class Game {
     let {majority} = this.countPlayers();
     if (player.votes.length >= majority) {
       player.silenced = true;
-      this.send({player: "System", text: `${player.name} is now silenced and cannot speak. They were ${player.role}.`});
+      this.send({player: "System", text: `${player.name} is now silenced and cannot speak. They were ${player.force}.`});
 
       if (majority <= 2) {
         this.send({player: "System", text: `Votes have been reset.`});
@@ -202,7 +176,7 @@ class Game {
         continue;
       }
 
-      if (player.role === 'human') {
+      if (player.force === 'human') {
         humans++;
       } else {
         enmeshed++;

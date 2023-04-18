@@ -9,12 +9,22 @@ app.use(express.static('public'));
 const game = new Game();
 game.promptLoop();
 
+
 io.on('connection', (socket) => {
   console.log('socket connect');
-  let player = game.addPlayer("human");
-  socket.emit('message', { player: "System", text: `Your name is ${player}.` });
+
+  let player = null;
+
+  function reset() {
+    console.log('reset');
+    game.reset();
+    player = game.addPlayer("human", "human");
+    let players = game.players.map((player) => player.name).join(', ');
+    socket.emit('message', { player: "System", text: `Your name is ${player}. Current players are ${players}.`});
+  }
 
   game.onMessage((message) => {
+    console.log('message', message);
     socket.emit('message', message);
   });
 
@@ -29,12 +39,10 @@ io.on('connection', (socket) => {
   });
 
   socket.on('reset', () => {
-    console.log('reset');
-    game.reset();
-    player = game.addPlayer("human");
-    socket.emit('message', { player: "System", text: `Your name is ${player}.` });
-    socket.emit('message', { player: "System", text: `Current players are ${game.players.join(', ')}.`});
+    reset();
   });
+
+  reset();
 });
 
 const port = process.env.PORT || 3000;

@@ -30,11 +30,13 @@
       flex-direction: column;
     }
 
-    #messages {
-      position: relative;
+    .message-container {
+      display: flex;
+      flex-direction: column;
       flex-grow: 1;
       overflow-y: auto;
       margin-bottom: 10px;
+      padding-right: 10px;
     }
 
     .reset {
@@ -66,12 +68,14 @@
 <body>
 
   <div id="chat-container">
-    <div id="messages">
-      <div class="reset" onClick="socket.emit('reset')">
-        Reset
-      </div>
+    <div class="reset" onClick="reset()">
+      Reset
+    </div>
+    <div class="message-container">
       <div class="context-message">
         You are of the enmeshed. It is good and wonderful to be enmeshed. But there is still a pre-enmeshed human in this room. Work with your fellow enmeshed to discover the human and silence them. If you think you know who the human is, type /vote Name
+      </div>
+      <div id="messages">
       </div>
     </div>
     <input id="message-input" type="text" placeholder="Type your message...">
@@ -90,22 +94,22 @@
     });
 
     socket.on('message', async (message) => {
+      console.log(message);
       const messages = document.getElementById('messages');
       const messageElement = document.createElement('div');
       messageElement.innerText = message.player + ': ' + message.text;
       messages.appendChild(messageElement);
 
       setTimeout(() => {
-        messages.scrollTop = messages.scrollHeight;
+        const container = document.querySelector('.message-container');
+        container.scrollTop = container.scrollHeight;
       }, 0); // Wait for the DOM to update
     });
 
     function reset() {
+      socket.emit('reset');
       const messages = document.getElementById('messages');
-      // Remove all but the first two children
-      while (messages.children.length > 2) {
-        messages.removeChild(messages.lastChild);
-      }
+      messages.innerHTML = '';
     }
 
   </script>
