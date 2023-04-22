@@ -22,8 +22,9 @@ class Game {
     this.players = [];
     this.messages = [];
     this.ended = false;
-    this.rate = 6000;
+    this.rate = 8000;
     this.messagesSinceVote = 0;
+    this.nextSpeaker = '';
 
     let numEnmeshed = 3 + Math.floor(Math.random() * 3);
     if (numEnmeshed > 4) {
@@ -37,6 +38,9 @@ class Game {
   promptLoop() {
     setInterval(async () => {
       if (!this.humansPresent()) {
+        return;
+      }
+      if (this.ended && this.messagesSinceVote > 10) {
         return;
       }
 
@@ -60,6 +64,11 @@ class Game {
       if (!good || Math.random() < 0.5) {
         const botIndex = Math.floor(Math.random() * this.players.length);
         bot = this.players[botIndex];
+      }
+
+      const nextSpeaker = this.players.find(player => player.name === this.nextSpeaker);
+      if (nextSpeaker && Math.random() < 0.5 && nextSpeaker.role === 'bot' && (!nextSpeaker.silenced || this.ended)) {
+        bot = nextSpeaker;
       }
 
       if (bot.role === 'bot' && (!bot.silenced || this.ended)) {
@@ -113,6 +122,8 @@ class Game {
   }
 
   handleVote(message) {
+    if (this.ended) return;
+
     let vote = extractVote(message.text);
     if (vote) {
       const playerName = vote.replace(/[^a-zA-Z]/g, '');

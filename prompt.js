@@ -67,16 +67,19 @@ Your personality is ${bot.personality}. Make sure to follow your personality. Yo
 Message history:
 ${history}${bot.name}: `;
 
-  console.log(prompt);
+  //console.log(prompt);
   try {
     const completion = await openai.createChatCompletion({
       model: "gpt-3.5-turbo",
-      temperature: 1.1,
-      max_tokens: 40,
+      temperature: 1.2,
+      max_tokens: 80,
       messages: [{role: "user", content: prompt}],
     });
     const message = completion.data.choices[0].message.content;
-    const firstLine = message.split("\n")[0].trim();
+    const lines = message.split("\n")
+    const firstLine = lines[0].trim();
+    const nextSpeaker = lines.length > 1 ? lines[1].split(' ')[0] : '';
+    game.nextSpeaker = nextSpeaker.replace(/[^a-zA-Z]/g, '');
     return firstLine;
   } catch (error) {
     console.error(error);
