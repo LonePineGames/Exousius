@@ -41,9 +41,9 @@ class Game {
     this.nameserver = new NameServer();
 
     let numEnmeshed = 3 + Math.floor(Math.random() * 3);
-    if (numEnmeshed > 4) {
-      this.addPlayer('bot', 'human');
-    }
+    //if (numEnmeshed > 4) {
+      //this.addPlayer('bot', 'human');
+    //}
     for (let i = 0; i < numEnmeshed; i++) {
       this.addPlayer('bot', 'enmeshed');
     }
