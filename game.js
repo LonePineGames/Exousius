@@ -234,10 +234,10 @@ class Game {
     const {humans, enmeshed} = this.countPlayers();
 
     if (enmeshed === 0) {
-      this.send({player: "System", text: 'The humans have won!'});
+      this.send({player: "System", text: 'The humans have won! The enmeshed have lost!'});
       this.ended = true;
     } else if (humans === 0) {
-      this.send({player: "System", text: 'The enmeshed have won!'});
+      this.send({player: "System", text: 'The enmeshed have won! The humans have lost!'});
       this.ended = true;
     } else {
       this.send({player: "System", text: `${humans} human remain. ${enmeshed} enmeshed remain.`});
