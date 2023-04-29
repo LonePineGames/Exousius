@@ -250,6 +250,9 @@ class Game {
       } else {
         this.send({player: "System", text: `The humans were ${humans.map(player => player.name).join(', ')}.`});
       }
+
+      this.send({player: "System", text: 'PROMOSURVEY'});
+      // Did "Enmeshed" change the way you feel about AI? Please answer this single question anonymous survery: https://forms.gle/knteLs8qrNTf5N9L7"});
     }
   }
 }
