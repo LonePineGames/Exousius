@@ -5,92 +5,82 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Enmeshed</title>
   <style>
+    :root {
+      --light-bg: #EEE;
+      --light-text: #333;
+      --alternate-bg: #b3d9ff;
+      --accent-color: #1E90FF;
+      --primary-color: #FFF;
+    }
+
     body {
-      background-color: #222;
-      color: #ccc;
+      background-color: var(--light-bg);
+      color: var(--light-text);
       font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
     #chat-container {
       max-width: 600px;
       margin: 0 auto;
-      background-color: #333;
-      max-height: 80vh;
+      background-color: var(--primary-color);
       display: flex;
       flex-direction: column;
+      padding: 0.5rem;
+      box-sizing: border-box;
     }
 
-    .context-message {
-      margin-bottom: 10px;
-      padding: 5px;
-      border-radius: 3px;
-      background-color: #444;
+    .context-message, .message {
+      margin: -0.5rem 0;
+      padding: 1rem;
+      border-radius: 1rem;
+      background-color: var(--light-bg);
+      color: var(--light-text);
+    }
+
+    .message:nth-of-type(even) {
+      background-color: var(--alternate-bg);
     }
 
     .message-container {
       flex-grow: 1;
-      padding: 5px;
-    }
-
-    .message {
-      margin-bottom: 10px;
-      padding: 5px;
-      border-radius: 3px;
-      background-color: #444;
     }
 
     .message.user {
-      background-color: #666;
-    }
-
-    .footer {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background-color: #333;
-      padding: 10px;
-      box-sizing: border-box;
+      background-color: var(--accent-color);
+      color: var(--primary-color);
     }
 
     #message-input {
       border: none;
-      border-radius: 3px;
-      margin-bottom: 10px;
-      padding: 5px;
-      margin: 5px;
-      color: #333;
+      border-radius: 1rem;
+      padding: 0.5rem;
+      font-size: 1rem; /* This should prevent zooming on iOS */
+      width: 100%;
+      box-sizing: border-box;
+      color: var(--light-text);
     }
 
     .reset {
-      padding: 5px;
-      border-radius: 3px;
-      background-color: #444;
-      margin: 5px;
-      margin-top: 0;
-      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 1rem;
+      background-color: var(--accent-color);
+      color: var(--primary-color);
       text-align: center;
-    }
-
-    /* Responsive Layout */
-    @media screen and (max-width: 600px) {
-      #chat-container {
-        height: 100vh;
-      }
-      .footer {
-        position: static;
-      }
+      cursor: pointer;
+      margin-top: 0.5rem;
     }
 
     /* Scrollbar Styling */
     ::-webkit-scrollbar {
-      width: 8px;
-      background-color: #333;
+      width: 0.5rem;
     }
 
     ::-webkit-scrollbar-thumb {
-      background-color: #ccc;
-      border-radius: 10px;
+      background-color: var(--accent-color);
+      border-radius: 0.25rem;
     }
   </style>
 </head>
@@ -107,7 +97,7 @@
     <div class="reset" onClick="reset()">
       Reset
     </div>
-    <textarea id="message-input" placeholder="Type your message to the enmeshed..." autofocus></textarea>
+    <textarea id="message-input" placeholder="Type your message to the enmeshed..." autofocus="true"></textarea>
 
   </div>
   <script src="/socket.io/socket.io.js"></script>
