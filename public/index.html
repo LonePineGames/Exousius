@@ -170,6 +170,7 @@
 
     setVhVariable();
     window.addEventListener('resize', setVhVariable);
+    setInterval(setVhVariable, 1000);
 
     document.getElementById('message-input').addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
