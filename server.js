@@ -10,13 +10,13 @@ io.on('connection', (socket) => {
   console.log('socket connect');
 
   const game = new Game();
-  game.promptLoop();
 
   let player = null;
 
   function reset() {
     console.log('reset');
     game.reset();
+    game.promptLoop();
     player = game.addPlayer("human", "human");
     let players = game.players.map((player) => player.name).join(', ');
     socket.emit('message', { player: "System", text: `Your name is ${player}. Current players are ${players}.`});
@@ -35,6 +35,8 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('socket disconnect');
     game.removePlayer(player);
+    game.kill();
+    console.log('game killed');
   });
 
   socket.on('reset', () => {

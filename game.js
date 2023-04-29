@@ -14,11 +14,24 @@ class Player {
 
 class Game {
   constructor() {
+    this.currentPromptLoop = null;
     this.messageHandlers = [];
     this.reset();
   }
 
+  kill() {
+    if (this.currentPromptLoop) {
+      clearInterval(this.currentPromptLoop);
+    }
+    this.currentPromptLoop = null;
+  }
+
   reset() {
+    if (this.currentPromptLoop) {
+      clearInterval(this.currentPromptLoop);
+    }
+    this.currentPromptLoop = null;
+
     this.players = [];
     this.messages = [];
     this.ended = false;
@@ -36,7 +49,7 @@ class Game {
   }
 
   promptLoop() {
-    setInterval(async () => {
+    this.currentPromptLoop = setInterval(async () => {
       if (!this.humansPresent()) {
         return;
       }
