@@ -160,7 +160,7 @@ class Game {
     let {majority} = this.countPlayers();
     if (player.votes.length >= majority) {
       player.silenced = true;
-      this.send({player: "System", text: `${player.name} is now silenced and cannot speak. They were ${player.force}.`});
+      this.send({player: "System", text: `${player.name} is now silenced and cannot speak. ${player.name} was ${player.force}.`});
 
       if (majority <= 2) {
         this.send({player: "System", text: `Votes have been reset.`});
@@ -210,6 +210,15 @@ class Game {
       this.ended = true;
     } else {
       this.send({player: "System", text: `${humans} human remain. ${enmeshed} enmeshed remain.`});
+    }
+
+    if (this.ended) {
+      let humans = this.players.filter(player => player.force === 'human');
+      if (humans.length === 1) {
+        this.send({player: "System", text: `The human was ${humans[0].name}.`});
+      } else {
+        this.send({player: "System", text: `The humans were ${humans.map(player => player.name).join(', ')}.`});
+      }
     }
   }
 }
