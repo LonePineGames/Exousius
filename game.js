@@ -1,11 +1,11 @@
-const { getUnusedName } = require('./names');
+const { NameServer } = require('./names');
 const { promptBot, personalities } = require('./prompt');
 
 class Player {
-  constructor(role, force) {
+  constructor(role, force, name) {
     this.role = role;
     this.force = force;
-    this.name = getUnusedName();
+    this.name = name;
     this.votes = [];
     this.silenced = false;
     this.personality = personalities[Math.floor(Math.random() * personalities.length)];
@@ -38,6 +38,7 @@ class Game {
     this.rate = 8000;
     this.messagesSinceVote = 0;
     this.nextSpeaker = '';
+    this.nameserver = new NameServer();
 
     let numEnmeshed = 3 + Math.floor(Math.random() * 3);
     if (numEnmeshed > 4) {
@@ -100,7 +101,7 @@ class Game {
 
   addPlayer(role, force) {
     //if (role === 'human') return 'Human';
-    const player = new Player(role, force);
+    const player = new Player(role, force, this.nameserver.getUnusedName());
     this.players.push(player);
     return player.name;
   }
