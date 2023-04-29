@@ -30,10 +30,14 @@
       flex-direction: column;
       padding: 0.5rem;
       box-sizing: border-box;
+      overflow-y: auto;
+    }
+
+    .message {
+      margin: -0.5rem 0;
     }
 
     .context-message, .message {
-      margin: -0.5rem 0;
       padding: 1rem;
       border-radius: 1rem;
       background-color: var(--light-bg);
@@ -70,7 +74,7 @@
       color: var(--primary-color);
       text-align: center;
       cursor: pointer;
-      margin-top: 0.5rem;
+      margin-top: 1rem;
     }
 
     /* Scrollbar Styling */
@@ -102,15 +106,27 @@
   </div>
   <script src="/socket.io/socket.io.js"></script>
   <script>
-
     const socket = io();
+    const chatContainer = document.getElementById('chat-container');
+
+    // Adjusts the height of the chat container
+    function adjustChatContainerHeight() {
+      chatContainer.style.height = `${window.innerHeight}px`;
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    // Initial adjustment
+    adjustChatContainerHeight();
+
+    // Adjust the height whenever the window is resized
+    window.addEventListener('resize', adjustChatContainerHeight);
 
     document.getElementById('message-input').addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') {
-        socket.emit('message', {text: event.target.value});
-        event.target.value = '';
-        event.preventDefault();
-      }
+        if (event.key === 'Enter') {
+          socket.emit('message', {text: event.target.value});
+          event.target.value = '';
+          event.preventDefault();
+        }
     });
 
     socket.on('message', async (message) => {
@@ -123,7 +139,7 @@
       messages.appendChild(messageElement);
 
       setTimeout(() => {
-        document.documentElement.scrollTop = document.documentElement.scrollHeight;
+        chatContainer.scrollTop = chatContainer.scrollHeight;
       }, 100);
     });
 
@@ -132,7 +148,6 @@
       const messages = document.getElementById('messages');
       messages.innerHTML = '';
     }
-
   </script>
 </body>
 </html>
