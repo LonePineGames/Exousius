@@ -1,6 +1,19 @@
 
+// Set up OpenAI key
+let apiKey = '';
+if (process.env.OPENAI_KEY) {
+  apiKey = process.env.OPENAI_KEY;
+} else {
+  try {
+    apiKey = require('./openai.json').apiKey;
+  } catch (error) {
+    console.error(error);
+    console.error('No OpenAI key found. Please set OPENAI_KEY environment variable or create openai.json file.');
+    process.exit(1);
+  }
+}
+
 const { Configuration, OpenAIApi } = require("openai");
-const apiKey = require('./openai.json').apiKey;
 const configuration = new Configuration({
   apiKey,
 });
