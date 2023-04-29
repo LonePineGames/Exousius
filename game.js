@@ -16,7 +16,7 @@ class Game {
   constructor() {
     this.currentPromptLoop = null;
     this.messageHandlers = [];
-    this.rate = 6000;
+    this.rate = 10000;
     this.reset();
   }
 
@@ -66,7 +66,7 @@ class Game {
       if (!this.humansPresent()) {
         return;
       }
-      if (this.ended && this.messagesSinceVote > 10) {
+      if (this.ended && this.messagesSinceVote > 15) {
         this.send({player: "System", text: 'The game has ended. You can start a new game by clicking reset.'});
         this.kill();
         return;
