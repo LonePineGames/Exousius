@@ -32,6 +32,10 @@ io.on('connection', (socket) => {
     game.send(message);
   });
 
+  socket.on('set-rate', (rate) => {
+    game.setRate(rate);
+  });
+
   socket.on('disconnect', () => {
     console.log('socket disconnect');
     game.removePlayer(player);

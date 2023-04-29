@@ -16,6 +16,7 @@ class Game {
   constructor() {
     this.currentPromptLoop = null;
     this.messageHandlers = [];
+    this.rate = 6000;
     this.reset();
   }
 
@@ -35,7 +36,6 @@ class Game {
     this.players = [];
     this.messages = [];
     this.ended = false;
-    this.rate = 8000;
     this.messagesSinceVote = 0;
     this.nextSpeaker = '';
     this.nameserver = new NameServer();
@@ -49,7 +49,19 @@ class Game {
     }
   }
 
+  setRate(rate) {
+    this.rate = rate;
+    this.promptLoop();
+    console.log("RATE", rate);
+  }
+
   promptLoop() {
+    if (this.currentPromptLoop) {
+      clearInterval(this.currentPromptLoop);
+    }
+    if (this.rate <= 10) {
+      return;
+    }
     this.currentPromptLoop = setInterval(async () => {
       if (!this.humansPresent()) {
         return;

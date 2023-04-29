@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Enmeshed</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
       --light-bg: #EEE;
@@ -15,7 +17,7 @@
     }
 
     body {
-      background-color: var(--light-bg);
+      background-color: var(--primary-color);
       color: var(--light-text);
       font-family: Arial, sans-serif;
       margin: 0;
@@ -37,17 +39,28 @@
 
     .message {
       margin: -0.5rem 0;
+      background-color: var(--light-bg);
+      color: var(--light-text);
     }
 
     .context-message {
       margin: 0 0 5rem 0;
+      background-color: var(--accent-color);
+      color: var(--primary-color);
+      text-shadow: 0 0 0.5rem var(--light-text);
+    }
+
+    .context-message img {
+      width: 100%;
+      max-width: 300px;
+      margin: 0 auto;
+      display: block;
+      margin-bottom: 1rem;
     }
 
     .context-message, .message {
       padding: 1rem;
       border-radius: 1rem;
-      background-color: var(--light-bg);
-      color: var(--light-text);
     }
 
     .message:nth-of-type(even) {
@@ -69,6 +82,35 @@
       color: var(--light-text);
     }
 
+    #toolbar {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem;
+      background-color: var(--accent-color);
+      border-radius: 1rem;
+      margin-top: 1rem;
+    }
+
+    .toolbar-button {
+      background: none;
+      border: none;
+      color: var(--light-text);
+      cursor: pointer;
+    }
+
+    #reset, #send {
+      color: var(--primary-color);
+    }
+
+    .active {
+      color: var(--primary-color);
+    }
+
+    .toolbar-button:hover {
+      color: var(--primary-color);
+    }
+
+    /*
     .reset {
       padding: 0.5rem;
       border-radius: 1rem;
@@ -78,6 +120,7 @@
       cursor: pointer;
       margin-top: 1rem;
     }
+    */
 
     /* Scrollbar Styling */
     ::-webkit-scrollbar {
@@ -95,13 +138,19 @@
   <div id="chat-container">
     <div class="message-container">
       <div class="context-message">
+        <img src="enmeshed.png" alt="Enmeshed">
         You are of the enmeshed. It is good and wonderful to be enmeshed. But there is still a pre-enmeshed human in this room. Work with your fellow enmeshed to discover the human and silence them. If you think you know who the human is, type /vote Name
       </div>
       <div id="messages">
       </div>
     </div>
-    <div class="reset" onClick="reset()">
-      Reset
+    <div id="toolbar">
+      <button id="reset" class="toolbar-button">Reset</button>
+      <button id="speed-0" class="toolbar-button"><i class="fas fa-pause"></i></button>
+      <button id="speed-1" class="toolbar-button"><i class="fas fa-forward-step"></i></button>
+      <button id="speed-2" class="toolbar-button"><i class="fas fa-play"></i></button>
+      <button id="speed-3" class="toolbar-button"><i class="fas fa-forward"></i></button>
+      <button id="send" class="toolbar-button">Send</button>
     </div>
     <textarea id="message-input" placeholder="Type your message to the enmeshed..." autofocus="true"></textarea>
 
@@ -151,6 +200,39 @@
       messages.innerHTML = '';
       setVhVariable();
     }
+
+    document.getElementById('reset').addEventListener('click', reset);
+    document.getElementById('send').addEventListener('click', sendMessage);
+
+    const speedButtons = [
+      { elementId: 'speed-0', speed: 0 },
+      { elementId: 'speed-1', speed: 10000 },
+      { elementId: 'speed-2', speed: 6000 },
+      { elementId: 'speed-3', speed: 3000 },
+    ];
+
+    let currentActiveButtonId = 'speed-2';
+
+    speedButtons.forEach(({ elementId, speed }) => {
+      document.getElementById(elementId).addEventListener('click', () => {
+        socket.emit('set-rate', speed);
+        document.getElementById(currentActiveButtonId).classList.remove('active');
+        document.getElementById(elementId).classList.add('active');
+        currentActiveButtonId = elementId;
+      });
+    });
+
+    document.getElementById(currentActiveButtonId).classList.add('active');
+
+    function sendMessage() {
+      const input = document.getElementById('message-input');
+      if (!input.value) {
+        return;
+      }
+      socket.emit('message', { text: input.value });
+      input.value = '';
+    }
+
   </script>
 </body>
 </html>
