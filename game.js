@@ -51,7 +51,9 @@ class Game {
 
   setRate(rate) {
     this.rate = rate;
-    this.promptLoop();
+    if (!this.ended || this.messagesSinceVote <= 12) {
+      this.promptLoop();
+    }
     console.log("RATE", rate);
   }
 
@@ -66,7 +68,7 @@ class Game {
       if (!this.humansPresent()) {
         return;
       }
-      if (this.ended && this.messagesSinceVote > 15) {
+      if (this.ended && this.messagesSinceVote > 12) {
         this.send({player: "System", text: 'The game has ended. You can start a new game by clicking reset.'});
         this.kill();
         return;

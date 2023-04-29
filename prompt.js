@@ -125,6 +125,7 @@ const personalities = [
   'troll',
   'confused',
   'intuitive',
+  'vibing',
   'Karen',
   '"votes for everyone"',
   '"always votes"',
