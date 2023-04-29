@@ -213,6 +213,7 @@
     ];
 
     let currentActiveButtonId = 'speed-1';
+    let lastSpeed = 10000;
 
     speedButtons.forEach(({ elementId, speed }) => {
       document.getElementById(elementId).addEventListener('click', () => {
@@ -220,6 +221,7 @@
         document.getElementById(currentActiveButtonId).classList.remove('active');
         document.getElementById(elementId).classList.add('active');
         currentActiveButtonId = elementId;
+        lastSpeed = speed;
       });
     });
 
@@ -233,6 +235,21 @@
       socket.emit('message', { text: input.value });
       input.value = '';
     }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        socket.emit('set-rate', 0);
+        // Highlight the 'pause' button
+        document.getElementById(currentActiveButtonId).classList.remove('active');
+        document.getElementById('speed-0').classList.add('active');
+      } else {
+        socket.emit('set-rate', lastSpeed);
+        // Highlight the last active button
+        document.getElementById(currentActiveButtonId).classList.add('active');
+        document.getElementById('speed-0').classList.remove('active');
+      }
+    });
+
 
   </script>
 </body>
