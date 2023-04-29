@@ -8,9 +8,9 @@
     :root {
       --light-bg: #EEE;
       --light-text: #333;
-      --alternate-bg: #b3d9ff;
+      --alternate-bg: #FFF;
       --accent-color: #1E90FF;
-      --primary-color: #FFF;
+      --primary-color: #b3d9ff;
     }
 
     body {
@@ -37,6 +37,10 @@
       margin: -0.5rem 0;
     }
 
+    .context-message {
+      margin: 0 0 5rem 0;
+    }
+
     .context-message, .message {
       padding: 1rem;
       border-radius: 1rem;
@@ -52,17 +56,13 @@
       flex-grow: 1;
     }
 
-    .message.user {
-      background-color: var(--accent-color);
-      color: var(--primary-color);
-    }
-
     #message-input {
       border: none;
       border-radius: 1rem;
       padding: 0.5rem;
       font-size: 1rem; /* This should prevent zooming on iOS */
       width: 100%;
+      height: 3rem;
       box-sizing: border-box;
       color: var(--light-text);
     }
