@@ -203,7 +203,7 @@ class Game {
 
       this.checkWin();
       if (!this.ended) {
-        this.send({player: "System", text: `Remaining players: ${this.players.filter(player => !player.silenced).map(player => player.name).join(', ')}.`});
+        this.send({player: "System", text: `The game continues. The human is still in the room. Remaining players: ${this.players.filter(player => !player.silenced).map(player => player.name).join(', ')}.`});
       }
     }
   }
