@@ -55,6 +55,8 @@ class Game {
         return;
       }
       if (this.ended && this.messagesSinceVote > 10) {
+        this.send({player: "System", text: 'The game has ended. You can start a new game by clicking reset.'});
+        this.kill();
         return;
       }
 
@@ -136,7 +138,10 @@ class Game {
   }
 
   handleVote(message) {
-    if (this.ended) return;
+    if (this.ended) {
+      this.messagesSinceVote++;
+      return;
+    }
 
     let vote = extractVote(message.text);
     if (vote) {
