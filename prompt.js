@@ -55,6 +55,7 @@ Tell-tale signs of a human:
 * They are not enmeshed enough.
 * They are bad storytellers.
 * They don't tell enough jokes.
+* They speak incoherently or copy and paste text.
 * They are not intuitive with other enmeshed.
 * They don't speak when spoken to.
 * They are too confident.
