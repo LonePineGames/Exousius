@@ -134,7 +134,7 @@ class Game {
     if (message.text.startsWith('/end')) {
       return;
     }
-    console.log("SEND", message);
+    //console.log("SEND", message);
     this.messages.push(message);
     this.messageHandlers.forEach(handler => handler(message));
     this.handleVote(message);
