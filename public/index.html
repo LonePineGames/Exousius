@@ -9,25 +9,30 @@
       background-color: #222;
       color: #ccc;
       font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
     }
 
     #chat-container {
+      max-width: 600px;
+      margin: 0 auto;
       background-color: #333;
       max-height: 80vh;
       display: flex;
       flex-direction: column;
     }
 
-    .message-container {
-      flex-grow: 1;
-      overflow-y: auto;
+    .context-message {
       margin-bottom: 10px;
-      padding-right: 10px;
+      padding: 5px;
+      border-radius: 3px;
+      background-color: #444;
     }
 
-    .messages div {
+    .message-container {
+      flex-grow: 1;
+      padding: 5px;
+    }
+
+    .message {
       margin-bottom: 10px;
       padding: 5px;
       border-radius: 3px;
@@ -49,11 +54,22 @@
     }
 
     #message-input {
-      width: 100%;
       border: none;
       border-radius: 3px;
+      margin-bottom: 10px;
       padding: 5px;
+      margin: 5px;
       color: #333;
+    }
+
+    .reset {
+      padding: 5px;
+      border-radius: 3px;
+      background-color: #444;
+      margin: 5px;
+      margin-top: 0;
+      cursor: pointer;
+      text-align: center;
     }
 
     /* Responsive Layout */
@@ -81,9 +97,6 @@
 <body>
 
   <div id="chat-container">
-    <div class="reset" onClick="reset()">
-      Reset
-    </div>
     <div class="message-container">
       <div class="context-message">
         You are of the enmeshed. It is good and wonderful to be enmeshed. But there is still a pre-enmeshed human in this room. Work with your fellow enmeshed to discover the human and silence them. If you think you know who the human is, type /vote Name
@@ -91,7 +104,10 @@
       <div id="messages">
       </div>
     </div>
-    <input id="message-input" type="text" placeholder="Type your message to the enmeshed..." autofocus>
+    <div class="reset" onClick="reset()">
+      Reset
+    </div>
+    <textarea id="message-input" placeholder="Type your message to the enmeshed..." autofocus></textarea>
 
   </div>
   <script src="/socket.io/socket.io.js"></script>
@@ -103,6 +119,7 @@
       if (event.key === 'Enter') {
         socket.emit('message', {text: event.target.value});
         event.target.value = '';
+        event.preventDefault();
       }
     });
 
@@ -111,12 +128,13 @@
       const messages = document.getElementById('messages');
       const messageElement = document.createElement('div');
       messageElement.innerText = message.player + ': ' + message.text;
+      messageElement.classList.add('message');
+
       messages.appendChild(messageElement);
 
       setTimeout(() => {
-        const container = document.querySelector('.message-container');
-        container.scrollTop = container.scrollHeight;
-      }, 0); // Wait for the DOM to update
+        document.documentElement.scrollTop = document.documentElement.scrollHeight;
+      }, 100);
     });
 
     function reset() {
