@@ -37,6 +37,7 @@ class NameServer {
       'Tom',
       'Alvan',
       'Sally',
+      'Karen',
     ];
 
   }
