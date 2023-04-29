@@ -11,6 +11,7 @@
       --alternate-bg: #FFF;
       --accent-color: #1E90FF;
       --primary-color: #b3d9ff;
+      --vh: 1vh;
     }
 
     body {
@@ -23,6 +24,7 @@
     }
 
     #chat-container {
+      height: var(--vh);
       max-width: 600px;
       margin: 0 auto;
       background-color: var(--primary-color);
@@ -109,17 +111,16 @@
     const socket = io();
     const chatContainer = document.getElementById('chat-container');
 
-    // Adjusts the height of the chat container
-    function adjustChatContainerHeight() {
-      chatContainer.style.height = `${window.innerHeight}px`;
-      chatContainer.scrollTop = chatContainer.scrollHeight;
+    function setVhVariable() {
+      let vh = window.innerHeight;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+      setTimeout(() => {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }, 100);
     }
 
-    // Initial adjustment
-    adjustChatContainerHeight();
-
-    // Adjust the height whenever the window is resized
-    window.addEventListener('resize', adjustChatContainerHeight);
+    setVhVariable();
+    window.addEventListener('resize', setVhVariable);
 
     document.getElementById('message-input').addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
@@ -137,6 +138,7 @@
       messageElement.classList.add('message');
 
       messages.appendChild(messageElement);
+      setVhVariable();
 
       setTimeout(() => {
         chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -147,6 +149,7 @@
       socket.emit('reset');
       const messages = document.getElementById('messages');
       messages.innerHTML = '';
+      setVhVariable();
     }
   </script>
 </body>
