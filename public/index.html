@@ -13,6 +13,7 @@
       --alternate-bg: #FFF;
       --accent-color: #1E90FF;
       --primary-color: #b3d9ff;
+      --orange-accent: #FF901E;
       --vh: 1vh;
     }
 
@@ -21,6 +22,7 @@
       padding: 0;
       height: 100%;
       overflow: hidden;
+      line-height: 1.25;
     }
 
     body {
@@ -42,6 +44,7 @@
     }
 
     .message {
+      position: relative;
       margin: -0.5rem 0;
       background-color: var(--light-bg);
       color: var(--light-text);
@@ -63,7 +66,7 @@
     }
 
     .context-message, .message {
-      padding: 1rem;
+      padding: 0.75rem;
       border-radius: 1rem;
       animation: fadein 1s;
     }
@@ -75,6 +78,30 @@
 
     .message:nth-of-type(even) {
       background-color: var(--alternate-bg);
+    }
+
+    .name {
+      /*
+      position: relative;
+      top: -1rem;
+      left: -1rem;
+      */
+      margin-top: -0.25rem;
+      margin-bottom: -0.25rem;
+      margin-right: 0.25rem;
+      z-index: 1;
+
+      font-weight: bold;
+      background-color: var(--accent-color);
+      color: white;
+      padding: 0.25rem 0.5rem 0.25rem 0.25rem;
+      /*padding: 0.25rem 0.5rem;*/
+      border-radius: 0.5rem;
+    }
+
+    .name.system {
+      background-color: var(--orange-accent);
+      color: white;
     }
 
     #message-container {
@@ -243,17 +270,35 @@
 
     socket.on('message', async (message) => {
       console.log(message);
-      const messages = document.getElementById('messages');
-      const messageElement = document.createElement('div');
-      messageElement.innerText = message.player + ': ' + message.text;
-      messageElement.classList.add('message');
       soundQueue.push(message.player);
+      const messages = document.getElementById('messages');
+
+      // Creating div for player's name
+      const nameElement = document.createElement('span');
+      nameElement.innerText = '💁 ' + message.player;
+      nameElement.classList.add('name');
+
+      if (message.player === 'System') {
+        nameElement.classList.add('system');
+        nameElement.innerText = '🖥️ ' + message.player;
+      }
+
+      // Creating div for the message
+      const messageElement = document.createElement('div');
+      messageElement.appendChild(nameElement);
+      messageElement.classList.add('message');
 
       if (message.player === 'System' && message.text === 'PROMOSURVEY') {
-        messageElement.innerHTML = '<a href="https://forms.gle/knteLs8qrNTf5N9L7" target="_blank">Did "Enmeshed" change the way you feel about AI? Please answer this single-question anonymous survery.</a>';
+        messageElement.innerHTML = '<a class="text" href="https://forms.gle/knteLs8qrNTf5N9L7" target="_blank">Did "Enmeshed" change the way you feel about AI? Please answer this single-question anonymous survey.</a>';
+      } else {
+        const textElement = document.createElement('span');
+        textElement.innerText = message.text;
+        textElement.classList.add('text');
+        messageElement.appendChild(textElement);
       }
 
       messages.appendChild(messageElement);
+
       scrollToBottom();
     });
 
