@@ -158,6 +158,7 @@
       <button id="speed-1" class="toolbar-button"><i class="fas fa-forward-step"></i></button>
       <button id="speed-2" class="toolbar-button"><i class="fas fa-play"></i></button>
       <button id="speed-3" class="toolbar-button"><i class="fas fa-forward"></i></button>
+      <button id="mute" class="toolbar-button"><i class="fas fa-volume-up"></i></button>
       <button id="send" class="toolbar-button">Send</button>
     </div>
 
@@ -173,8 +174,12 @@
     serverSound.volume = 0.5;
     */
     const soundQueue = [];
+    let mute = false;
 
     function playSound(player) {
+      if (mute) {
+        return;
+      }
       let sound = null;
       if (player === 'System') {
         sound = new Audio('server.wav');
@@ -254,6 +259,14 @@
 
     document.getElementById('reset').addEventListener('click', reset);
     document.getElementById('send').addEventListener('click', sendMessage);
+    document.getElementById('mute').addEventListener('click', () => {
+      mute = !mute;
+      if (mute) {
+        document.getElementById('mute').innerHTML = '<i class="fas fa-volume-mute"></i>';
+      } else {
+        document.getElementById('mute').innerHTML = '<i class="fas fa-volume-up"></i>';
+      }
+    });
 
     const speedButtons = [
       { elementId: 'speed-0', speed: 0 },
