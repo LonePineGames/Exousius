@@ -138,10 +138,6 @@
       cursor: pointer;
     }
 
-    #reset, #send {
-      color: var(--primary-color);
-    }
-
     .active {
       color: var(--primary-color);
     }
@@ -191,7 +187,7 @@
       <button id="speed-1" class="toolbar-button"><i class="fas fa-forward-step"></i></button>
       <button id="speed-2" class="toolbar-button"><i class="fas fa-play"></i></button>
       <button id="speed-3" class="toolbar-button"><i class="fas fa-forward"></i></button>
-      <button id="mute" class="toolbar-button"><i class="fas fa-volume-up"></i></button>
+      <button id="mute" class="toolbar-button active"><i class="fas fa-volume-up"></i></button>
       <button id="send" class="toolbar-button">Send</button>
     </div>
 
@@ -312,10 +308,13 @@
     document.getElementById('send').addEventListener('click', sendMessage);
     document.getElementById('mute').addEventListener('click', () => {
       mute = !mute;
+      let muteElement = document.getElementById('mute');
       if (mute) {
-        document.getElementById('mute').innerHTML = '<i class="fas fa-volume-mute"></i>';
+        muteElement.classList.remove('active');
+        muteElement.innerHTML = '<i class="fas fa-volume-mute"></i>';
       } else {
-        document.getElementById('mute').innerHTML = '<i class="fas fa-volume-up"></i>';
+        muteElement.classList.add('active');
+        muteElement.innerHTML = '<i class="fas fa-volume-up"></i>';
       }
     });
 
