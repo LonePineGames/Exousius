@@ -263,8 +263,10 @@
     window.onload = function() {
       var currentUrl = window.location.href;
       var currentProtocol = window.location.protocol;
+      console.log("Should we force HTTPS? Current protocol: " + currentProtocol + " Current URL: " + currentUrl);
 
       if(currentProtocol !== 'https:' && !currentUrl.includes('localhost')) {
+        console.log("Redirecting to HTTPS");
         window.location.href = 'https:' + window.location.href.substring(window.location.protocol.length);
       }
     };
