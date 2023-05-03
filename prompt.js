@@ -77,7 +77,7 @@ If you think you know who the human is, type /vote <player name>
 
 Players in this game are: ${listNames(game.players.map((p) => p.name))}. ${humans} human remain. ${enmeshed} enmeshed remain. ${winText}
 
-${bot.name}'s personality is "${bot.personality}". Make sure to follow your personality. ${bot.name} is quick to vote, even when there is no evidence.
+${bot.name}'s personality is "${bot.personality}". Make sure to follow your personality. ${bot.name} is quick to vote, even when there is no evidence. ${bot.name} is not silenced right now.
 
 Message history:
 ${history}${bot.name}: `;
