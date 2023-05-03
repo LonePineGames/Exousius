@@ -16,12 +16,17 @@
       --vh: 1vh;
     }
 
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+
     body {
       background-color: var(--primary-color);
       color: var(--light-text);
       font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
       box-sizing: border-box;
     }
 
@@ -34,7 +39,6 @@
       flex-direction: column;
       padding: 0.5rem;
       box-sizing: border-box;
-      overflow-y: auto;
     }
 
     .message {
@@ -67,17 +71,21 @@
       background-color: var(--alternate-bg);
     }
 
-    .message-container {
+    #message-container {
       flex-grow: 1;
+      overflow-y: auto;
+      height: 100%;
     }
 
     #message-input {
+      height: 3rem;
+      margin-top: 1rem;
+      width: 100%;
+
       border: none;
       border-radius: 1rem;
       padding: 0.5rem;
       font-size: 1rem; /* This should prevent zooming on iOS */
-      width: 100%;
-      height: 3rem;
       box-sizing: border-box;
       color: var(--light-text);
     }
@@ -87,7 +95,6 @@
       justify-content: space-between;
       background-color: var(--accent-color);
       border-radius: 1rem;
-      margin-top: 1rem;
     }
 
     .toolbar-button {
@@ -136,7 +143,7 @@
 <body>
 
   <div id="chat-container">
-    <div class="message-container">
+    <div id="message-container">
       <div class="context-message">
         <img src="enmeshed.png" alt="Enmeshed">
         You are of the enmeshed. It is good and wonderful to be enmeshed. But there is still a pre-enmeshed human in this room. Work with your fellow enmeshed to discover the human and silence them. If you think you know who the human is, type /vote Name
@@ -144,6 +151,7 @@
       <div id="messages">
       </div>
     </div>
+    <textarea id="message-input" placeholder="Type your message to the enmeshed..." autofocus="true"></textarea>
     <div id="toolbar">
       <button id="reset" class="toolbar-button">Reset</button>
       <button id="speed-0" class="toolbar-button"><i class="fas fa-pause"></i></button>
@@ -152,20 +160,22 @@
       <button id="speed-3" class="toolbar-button"><i class="fas fa-forward"></i></button>
       <button id="send" class="toolbar-button">Send</button>
     </div>
-    <textarea id="message-input" placeholder="Type your message to the enmeshed..." autofocus="true"></textarea>
 
   </div>
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
-    const chatContainer = document.getElementById('chat-container');
+    const messageContainer = document.getElementById('message-container');
+    function scrollToBottom() {
+      setTimeout(() => {
+        messageContainer.scrollTop = messageContainer.scrollHeight;
+      }, 100);
+    }
 
     function setVhVariable() {
       let vh = window.innerHeight;
       document.documentElement.style.setProperty('--vh', `${vh}px`);
-      setTimeout(() => {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-      }, 100);
+      scrollToBottom();
     }
 
     setVhVariable();
@@ -193,10 +203,7 @@
 
       messages.appendChild(messageElement);
       setVhVariable();
-
-      setTimeout(() => {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-      }, 100);
+      scrollToBottom();
     });
 
     function reset() {
