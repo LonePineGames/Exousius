@@ -202,7 +202,6 @@
       }
 
       messages.appendChild(messageElement);
-      setVhVariable();
       scrollToBottom();
     });
 
@@ -210,7 +209,6 @@
       socket.emit('reset');
       const messages = document.getElementById('messages');
       messages.innerHTML = '';
-      setVhVariable();
     }
 
     document.getElementById('reset').addEventListener('click', reset);
