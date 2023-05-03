@@ -36,6 +36,7 @@ class Game {
     this.players = [];
     this.messages = [];
     this.ended = false;
+    this.cancelNext = false;
     this.messagesSinceVote = 0;
     this.nextSpeaker = '';
     this.nameserver = new NameServer();
@@ -107,9 +108,12 @@ class Game {
           let player = players[Math.floor(Math.random() * players.length)];
           this.send({player: bot.name, text: '/vote ' + player.name});
         }
+        this.cancelNext = false;
         const response = await promptBot(bot, this);
-        if (response.length > 0) {
-          this.send({player: bot.name, text: response});
+        if (response.length > 0 && !this.cancelNext) {
+          //setTimeout(() => {
+            this.send({player: bot.name, text: response});
+          //}, 1000);
         }
       }
     }, this.rate);
@@ -246,6 +250,7 @@ class Game {
     }
 
     if (this.ended) {
+      this.cancelNext = true;
       let humans = this.players.filter(player => player.force === 'human');
       if (humans.length === 1) {
         this.send({player: "System", text: `The human was ${humans[0].name}.`});
