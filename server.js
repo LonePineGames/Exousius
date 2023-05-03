@@ -4,14 +4,14 @@ const server = require('http').createServer(app);
 const io = require('socket.io')(server);
 const Game = require('./game');
 
-app.use(express.static('public'));
-
 app.use((req, res, next) => {
-  if (req.headers['x-forwarded-proto'] !== 'https') {
+  if (!req.get('Host').startsWith('localhost') && req.headers['x-forwarded-proto'] !== 'https') {
     return res.redirect(['https://', req.get('Host'), req.url].join(''));
   }
   next();
 });
+
+app.use(express.static('public'));
 
 io.on('connection', (socket) => {
   console.log('socket connect');
