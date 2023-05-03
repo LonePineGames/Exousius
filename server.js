@@ -24,6 +24,7 @@ io.on('connection', (socket) => {
 
   function reset() {
     console.log('reset');
+    socket.emit('reset');
     game.reset();
     game.promptLoop();
     player = game.addPlayer("human", "human");

@@ -322,6 +322,11 @@
       messages.innerHTML = '';
     }
 
+    socket.on('reset', function() {
+      const messages = document.getElementById('messages');
+      messages.innerHTML = '';
+    });
+
     document.getElementById('reset').addEventListener('click', reset);
     document.getElementById('send').addEventListener('click', sendMessage);
     document.getElementById('mute').addEventListener('click', () => {
