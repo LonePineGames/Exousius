@@ -1,7 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Chat App</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enmeshed</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
 :root {
@@ -16,14 +20,31 @@ body, html {
 }
 
 #chat-window {
-    height: calc(90 * var(--vh));  /* Use the vh variable to set the height */
+    height: calc(var(--vh) - 6rem);  /* Adjusted for toolbar and chat-input */
     overflow-y: scroll;
 }
 
 #chat-input {
-    height: calc(10 * var(--vh));
+    height: 3rem;  /* Adjusted for toolbar */
     width: 100%;
 }
+
+#toolbar {
+    height: 2rem;
+    display: flex;
+    justify-content: space-between;
+    background-color: var(--accent-color);
+    border-radius: 1rem;
+}
+
+.toolbar-button {
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    color: var(--light-text);
+    cursor: pointer;
+}
+
 </style>
 
 </head>
@@ -32,17 +53,24 @@ body, html {
         <!-- Chat messages will be appended here -->
     </div>
     <textarea id="chat-input" placeholder="Type a message..."></textarea>
-    <button id="send-button">Send</button>
+    <div id="toolbar">
+        <button id="reset" class="toolbar-button">Reset</button>
+        <button id="speed-0" class="toolbar-button"><i class="fas fa-pause"></i></button>
+        <button id="speed-1" class="toolbar-button"><i class="fas fa-forward-step"></i></button>
+        <button id="speed-2" class="toolbar-button"><i class="fas fa-play"></i></button>
+        <button id="speed-3" class="toolbar-button"><i class="fas fa-forward"></i></button>
+        <button id="send" class="toolbar-button">Send</button>
+    </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', (event) => {
     // Set the vh variable in CSS
-    let vh = window.innerHeight * 0.01;
+    let vh = window.innerHeight;
     document.documentElement.style.setProperty('--vh', `${vh}px`);
 
     // Update the vh variable when the window is resized
     window.addEventListener('resize', () => {
-        let vh = window.innerHeight * 0.01;
+        let vh = window.innerHeight;
         document.documentElement.style.setProperty('--vh', `${vh}px`);
         setTimeout(() => {
             document.getElementById('chat-window').scrollTop = document.getElementById('chat-window').scrollHeight;
@@ -80,7 +108,7 @@ function sendMessage() {
     chatInput.value = '';
 }
 
-document.getElementById('send-button').addEventListener('click', sendMessage);
+document.getElementById('send').addEventListener('click', sendMessage);
 
 document.getElementById('chat-input').addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
