@@ -65,6 +65,12 @@
     .context-message, .message {
       padding: 1rem;
       border-radius: 1rem;
+      animation: fadein 1s;
+    }
+
+    @keyframes fadein {
+      from { opacity: 0; }
+      to   { opacity: 1; }
     }
 
     .message:nth-of-type(even) {
