@@ -200,6 +200,7 @@ class Game {
       player.silenced = true;
       this.send({player: "System", text: `${player.name} is now silenced and cannot speak. ${player.name} was ${player.force}.`});
 
+      this.cancelNext = true;
       this.checkWin();
       if (!this.ended) {
         this.send({player: "System", text: `The game continues. The human is still in the room. Remaining players: ${this.players.filter(player => !player.silenced).map(player => player.name).join(', ')}.`});
@@ -250,7 +251,6 @@ class Game {
     }
 
     if (this.ended) {
-      this.cancelNext = true;
       let humans = this.players.filter(player => player.force === 'human');
       if (humans.length === 1) {
         this.send({player: "System", text: `The human was ${humans[0].name}.`});
