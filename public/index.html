@@ -166,6 +166,46 @@
   <script>
     const socket = io();
     const messageContainer = document.getElementById('message-container');
+    /*
+    const messageSound = new Audio('message.wav');
+    messageSound.volume = 0.5;
+    const serverSound = new Audio('server.wav');
+    serverSound.volume = 0.5;
+    */
+    const soundQueue = [];
+
+    function playSound(player) {
+      let sound = null;
+      if (player === 'System') {
+        sound = new Audio('server.wav');
+      } else {
+        sound = new Audio('message.wav');
+      }
+      sound.volume = 0.5;
+      sound.play();
+      /*
+      if (player === 'System') {
+        serverSound.play();
+      } else {
+        messageSound.play();
+      }
+      */
+    }
+
+    // Function to play sound and process messages from the queue
+    const processQueue = () => {
+      if (soundQueue.length > 0) {
+        // Play the message sound
+        playSound(soundQueue[0]);
+
+        // Remove the processed message from the queue
+        soundQueue.shift();
+      }
+    };
+
+    // Set an interval to process the message queue every 100ms
+    setInterval(processQueue, 250);
+
     function scrollToBottom() {
       setTimeout(() => {
         messageContainer.scrollTop = messageContainer.scrollHeight;
@@ -196,6 +236,7 @@
       const messageElement = document.createElement('div');
       messageElement.innerText = message.player + ': ' + message.text;
       messageElement.classList.add('message');
+      soundQueue.push(message.player);
 
       if (message.player === 'System' && message.text === 'PROMOSURVEY') {
         messageElement.innerHTML = '<a href="https://forms.gle/knteLs8qrNTf5N9L7" target="_blank">Did "Enmeshed" change the way you feel about AI? Please answer this single-question anonymous survery.</a>';
