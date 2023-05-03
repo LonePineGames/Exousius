@@ -199,17 +199,16 @@ class Game {
       player.silenced = true;
       this.send({player: "System", text: `${player.name} is now silenced and cannot speak. ${player.name} was ${player.force}.`});
 
-      if (majority <= 2) {
-        this.send({player: "System", text: `Votes have been reset.`});
-        for (const index in this.players) {
-          const player = this.players[index];
-          player.votes = [];
-        }
-      }
-
       this.checkWin();
       if (!this.ended) {
         this.send({player: "System", text: `The game continues. The human is still in the room. Remaining players: ${this.players.filter(player => !player.silenced).map(player => player.name).join(', ')}.`});
+        if (majority <= 2) {
+          this.send({player: "System", text: `Votes have been reset.`});
+          for (const index in this.players) {
+            const player = this.players[index];
+            player.votes = [];
+          }
+        }
       }
     }
   }
@@ -240,10 +239,10 @@ class Game {
     const {humans, enmeshed} = this.countPlayers();
 
     if (enmeshed === 0) {
-      this.send({player: "System", text: 'The humans have won! The enmeshed have lost!'});
+      this.send({player: "System", text: 'THE HUMANS HAVE WON! THE ENMESHED HAVE LOST!'});
       this.ended = true;
     } else if (humans === 0) {
-      this.send({player: "System", text: 'The enmeshed have won! The humans have lost!'});
+      this.send({player: "System", text: 'THE ENMESHED HAVE WON! THE HUMANS HAVE LOST!'});
       this.ended = true;
     } else {
       this.send({player: "System", text: `${humans} human remain. ${enmeshed} enmeshed remain.`});
@@ -260,7 +259,7 @@ class Game {
 
       setTimeout(() => {
         this.send({player: "System", text: 'PROMOSURVEY'});
-      }, 2000);
+      }, 11000);
       // Did "Enmeshed" change the way you feel about AI? Please answer this single question anonymous survery: https://forms.gle/knteLs8qrNTf5N9L7"});
     }
   }

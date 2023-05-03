@@ -76,7 +76,7 @@ If you think you know who the human is, type /vote <player name>
 
 Players in this game are: ${game.players.map((p) => p.name).join(", ")}. ${humans} human remain. ${enmeshed} enmeshed remain. ${winText}
 
-Your personality is ${bot.personality}. Make sure to follow your personality. You are quick to vote, even when there is no evidence.
+${bot.name}'s personality is "${bot.personality}". Make sure to follow your personality. ${bot.name} is quick to vote, even when there is no evidence.
 
 Message history:
 ${history}${bot.name}: `;
@@ -140,6 +140,7 @@ const personalities = [
   '"accuses everyone"',
   'natural leader',
   'natural follower',
+  'esoteric enmeshologist',
 ];
 
 module.exports = { promptBot, personalities };
