@@ -164,7 +164,8 @@ class Game {
     let vote = extractVote(message.text);
     if (vote) {
       const playerName = vote.replace(/[^a-zA-Z]/g, '');
-      const player = this.players.find(player => player.name === playerName);
+      const playerNameLower = playerName.toLowerCase();
+      const player = this.players.find(player => player.name.toLowerCase() === playerNameLower);
       if (player) {
         if (player.silenced) {
           this.send({player: "System", text: `${player.name} is already silenced.`});
@@ -266,7 +267,7 @@ class Game {
 }
 
 function extractVote(message) {
-  const voteIndex = message.indexOf("/vote");
+  const voteIndex = message.toLowerCase().indexOf("/vote");
   if (voteIndex !== -1) {
     const spaceIndex = message.indexOf(" ", voteIndex + 6);
     if (spaceIndex !== -1) {
