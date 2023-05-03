@@ -68,7 +68,7 @@
     .context-message, .message {
       padding: 0.75rem;
       padding-top: 0;
-      border-radius: 1rem;
+      border-radius: 1rem 0 1rem 0;
       animation: fadein 2s;
     }
 
@@ -109,7 +109,7 @@
       width: 100%;
 
       border: none;
-      border-radius: 1rem;
+      border-radius: 1rem 0 1rem 0;
       padding: 0.5rem;
       font-size: 1rem; /* This should prevent zooming on iOS */
       box-sizing: border-box;
@@ -133,7 +133,7 @@
       display: flex;
       justify-content: space-between;
       background-color: var(--accent-color);
-      border-radius: 1rem;
+      border-radius: 1rem 0 1rem 0;
     }
 
     .toolbar-button {
@@ -151,18 +151,6 @@
     .toolbar-button:hover {
       color: var(--primary-color);
     }
-
-    /*
-    .reset {
-      padding: 0.5rem;
-      border-radius: 1rem;
-      background-color: var(--accent-color);
-      color: var(--primary-color);
-      text-align: center;
-      cursor: pointer;
-      margin-top: 1rem;
-    }
-    */
 
     /* Scrollbar Styling */
     ::-webkit-scrollbar {
@@ -299,7 +287,7 @@
         messageElement.innerHTML = '<a class="text" href="https://forms.gle/knteLs8qrNTf5N9L7" target="_blank">Did "Enmeshed" change the way you feel about AI? Please answer this single-question anonymous survey.</a>';
       } else {
         const textElement = document.createElement('span');
-        textElement.innerText = message.text;
+        textElement.innerText = ' ' + message.text;
         textElement.classList.add('text');
         messageElement.appendChild(textElement);
       }
