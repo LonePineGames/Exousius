@@ -68,7 +68,7 @@
     .context-message, .message {
       padding: 0.75rem;
       border-radius: 1rem;
-      animation: fadein 1s;
+      animation: fadein 2s;
     }
 
     @keyframes fadein {
@@ -121,6 +121,19 @@
       font-size: 1rem; /* This should prevent zooming on iOS */
       box-sizing: border-box;
       color: var(--light-text);
+    }
+
+    #player-name {
+      position:relative;
+      top: 0.5rem;
+      margin: -0.5rem 0 -1rem 0.75rem;
+      width: fit-content;
+
+      font-weight: bold;
+      background-color: var(--accent-color);
+      color: white;
+      padding: 0.25rem 0.5rem 0.25rem 0.25rem;
+      border-radius: 0.5rem;
     }
 
     #toolbar {
@@ -180,6 +193,7 @@
       <div id="messages">
       </div>
     </div>
+    <div id="player-name">💁 Name</div>
     <textarea id="message-input" placeholder="Type your message to the enmeshed..." autofocus="true"></textarea>
     <div id="toolbar">
       <button id="reset" class="toolbar-button">Reset</button>
@@ -262,6 +276,10 @@
           event.target.value = '';
           event.preventDefault();
         }
+    });
+
+    socket.on('set-name', (name) => {
+      document.getElementById('player-name').innerText = '💁 ' + name;
     });
 
     socket.on('message', async (message) => {

@@ -28,6 +28,7 @@ io.on('connection', (socket) => {
     game.promptLoop();
     player = game.addPlayer("human", "human");
     let players = game.players.map((player) => player.name).join(', ');
+    socket.emit('set-name', player);
     socket.emit('message', { player: "System", text: `Your name is ${player}. Current players are ${players}.`});
   }
 
