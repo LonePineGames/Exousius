@@ -3,6 +3,7 @@ const app = express();
 const server = require('http').createServer(app);
 const io = require('socket.io')(server);
 const Game = require('./game');
+const { listNames } = require('./names');
 
 /*
 app.use((req, res, next) => {
@@ -28,7 +29,7 @@ io.on('connection', (socket) => {
     game.reset();
     game.promptLoop();
     player = game.addPlayer("human", "human");
-    let players = game.players.map((player) => player.name).join(', ');
+    let players = listNames(game.players.map((player) => player.name));
     socket.emit('set-name', player);
     socket.emit('message', { player: "System", text: `Your name is ${player}. Current players are ${players}.`});
   }

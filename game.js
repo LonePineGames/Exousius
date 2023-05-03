@@ -1,4 +1,4 @@
-const { NameServer } = require('./names');
+const { NameServer, listNames } = require('./names');
 const { promptBot, personalities } = require('./prompt');
 
 class Player {
@@ -203,7 +203,7 @@ class Game {
       this.cancelNext = true;
       this.checkWin();
       if (!this.ended) {
-        this.send({player: "System", text: `The game continues. The human is still in the room. Remaining players: ${this.players.filter(player => !player.silenced).map(player => player.name).join(', ')}.`});
+        this.send({player: "System", text: `The game continues. The human is still in the room. Remaining players: ${listNames(this.players.filter(player => !player.silenced).map(player => player.name))}.`});
         if (majority <= 2) {
           this.send({player: "System", text: `Votes have been reset.`});
           for (const index in this.players) {
@@ -255,7 +255,7 @@ class Game {
       if (humans.length === 1) {
         this.send({player: "System", text: `The human was ${humans[0].name}.`});
       } else {
-        this.send({player: "System", text: `The humans were ${humans.map(player => player.name).join(', ')}.`});
+        this.send({player: "System", text: `The humans were ${listNames(humans.map(player => player.name))}.`});
       }
 
       setTimeout(() => {

@@ -1,3 +1,4 @@
+const { listNames } = require('./names');
 
 // Set up OpenAI key
 let apiKey = '';
@@ -74,7 +75,7 @@ Tell-tale signs of a human:
 
 If you think you know who the human is, type /vote <player name>
 
-Players in this game are: ${game.players.map((p) => p.name).join(", ")}. ${humans} human remain. ${enmeshed} enmeshed remain. ${winText}
+Players in this game are: ${listNames(game.players.map((p) => p.name))}. ${humans} human remain. ${enmeshed} enmeshed remain. ${winText}
 
 ${bot.name}'s personality is "${bot.personality}". Make sure to follow your personality. ${bot.name} is quick to vote, even when there is no evidence.
 

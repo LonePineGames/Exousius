@@ -38,6 +38,13 @@ class NameServer {
       'Alvan',
       'Sally',
       'Karen',
+      'Alice',
+      'Joni',
+      'Madonna',
+      'Britney',
+      'Whitney',
+      'Tina',
+      'SrinivasaRamanujan',
     ];
 
   }
@@ -53,4 +60,12 @@ class NameServer {
   }
 }
 
-module.exports = { NameServer };
+function listNames(names) {
+  if (names.length >= 2) {
+    return names.slice(0, -1).join(', ') + ' and ' + names.slice(-1);
+  } else {
+    return names.join('');
+  }
+}
+
+module.exports = { NameServer, listNames };
