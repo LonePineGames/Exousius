@@ -16,24 +16,25 @@ async function initializeDatabase() {
 
   console.log('Connected to the SQLite database.');
 
-  try {
-    await db.run(`
-      CREATE TABLE IF NOT EXISTS messages (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        room TEXT NOT NULL,
-        character TEXT NOT NULL,
-        text TEXT NOT NULL,
-        timestamp TEXT NOT NULL
-      );
-    `);
+  async function makeTable(tableName, columns) {
+    try {
+      await db.run(`CREATE TABLE IF NOT EXISTS ${tableName} (${columns});`);
+      console.log('Table created (or already exists.)');
 
-    console.log('Table created or already exists.');
-
-    return db;
-  } catch (err) {
-    console.error(err.message);
-    throw err;
+      return db;
+    } catch (err) {
+      console.error(err.message);
+    }
   }
+
+  await makeTable('messages', `
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      room TEXT NOT NULL,
+      character TEXT NOT NULL,
+      text TEXT NOT NULL,
+      timestamp TEXT NOT NULL`);
+
+  return db;
 }
 
 async function send(db, message) {
