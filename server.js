@@ -27,7 +27,7 @@ io.on('connection', (socket) => {
     console.log('reset');
     socket.emit('reset');
     game.reset();
-    game.promptLoop();
+    //game.promptLoop();
     player = game.addPlayer("human", "human");
     let players = listNames(game.players.map((player) => player.name));
     socket.emit('set-name', player);

@@ -53,7 +53,7 @@ class Game {
   setRate(rate) {
     this.rate = rate;
     if (!this.ended || this.messagesSinceVote <= 12) {
-      this.promptLoop();
+      //this.promptLoop();
     }
     console.log("RATE", rate);
   }
