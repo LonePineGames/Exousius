@@ -240,12 +240,12 @@
     const soundQueue = [];
     let mute = false;
 
-    function playSound(player) {
+    function playSound(character) {
       if (mute) {
         return;
       }
       let sound = null;
-      if (player === 'System') {
+      if (character === 'System') {
         sound = new Audio('server.wav');
       } else {
         sound = new Audio('message.wav');
@@ -299,23 +299,22 @@
         }
     });
 
-    socket.on('set-name', (name) => {
+    socket.on('character', (name) => {
       document.getElementById('player-name').innerText = name;
     });
 
-    socket.on('message', async (message) => {
+    function messageReceived(message) {
       console.log(message);
-      soundQueue.push(message.player);
       const messages = document.getElementById('messages');
 
-      // Creating div for player's name
+      // Creating div for character's name
       const nameElement = document.createElement('span');
-      nameElement.innerText = message.player;
+      nameElement.innerText = message.character;
       nameElement.classList.add('name');
 
-      if (message.player === 'System') {
+      if (message.character === 'System') {
         nameElement.classList.add('system');
-        nameElement.innerText = message.player;
+        nameElement.innerText = message.character;
       }
 
       // Creating div for the message
@@ -323,7 +322,7 @@
       messageElement.appendChild(nameElement);
       messageElement.classList.add('message');
 
-      if (message.player === 'System' && message.text === 'PROMOSURVEY') {
+      if (message.character === 'System' && message.text === 'PROMOSURVEY') {
         messageElement.innerHTML = '<a class="text" href="https://forms.gle/knteLs8qrNTf5N9L7" target="_blank">Did "Enmeshed" change the way you feel about AI? Please answer this single-question anonymous survey.</a>';
       } else {
         const textElement = document.createElement('span');
@@ -335,6 +334,17 @@
       messages.appendChild(messageElement);
 
       scrollToBottom();
+    }
+
+    socket.on('message', async (message) => {
+      soundQueue.push(message.character);
+      messageReceived(message);
+    });
+
+    socket.on('previous messages', async (messages) => {
+      for (let i = 0; i < messages.length; i++) {
+        messageReceived(messages[i]);
+      }
     });
 
     function reset() {

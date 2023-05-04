@@ -1,70 +1,107 @@
 const express = require('express');
 const app = express();
-const server = require('http').createServer(app);
-const io = require('socket.io')(server);
-const Game = require('./game');
-const { listNames } = require('./names');
+const http = require('http').Server(app);
+const io = require('socket.io')(http);
+const sqlite3 = require('sqlite3').verbose();
+const dbFile = './chatroom.db';
 
-/*
-app.use((req, res, next) => {
-  if (!req.get('Host').startsWith('localhost') && req.headers['x-forwarded-proto'] !== 'https') {
-    return res.redirect(['https://', req.get('Host'), req.url].join(''));
+app.use(express.static('public'));
+
+// Initialize SQLite database
+const db = new sqlite3.Database(dbFile, (err) => {
+  if (err) {
+    console.error(err.message);
+  } else {
+    console.log('Connected to the SQLite database.');
+    db.run(
+      `CREATE TABLE IF NOT EXISTS messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        room TEXT NOT NULL,
+        character TEXT NOT NULL,
+        text TEXT NOT NULL,
+        timestamp TEXT NOT NULL
+      );`,
+      (err) => {
+        if (err) {
+          console.error(err.message);
+        } else {
+          console.log('Table created or already exists.');
+        }
+      }
+    );
   }
-  next();
 });
-*/
+
+function send(message) {
+  const messageData = {
+    timestamp: new Date().toISOString(),
+    ...message,
+  };
+
+  console.log(messageData);
+
+  // Insert the message into the database
+  db.run(
+    `INSERT INTO messages (room, character, text, timestamp) VALUES (?, ?, ?, ?);`,
+    [messageData.room, messageData.character, messageData.text, messageData.timestamp],
+    (err) => {
+      if (err) {
+        console.error(err.message);
+      } else {
+        console.log('Message inserted into the database.');
+
+        // Emit the message to all clients in the room
+        io.to(message.room).emit('message', messageData);
+      }
+    }
+  );
+}
 
 app.use(express.static('public'));
 
 io.on('connection', (socket) => {
-  console.log('socket connect');
+  console.log('a user connected');
 
-  const game = new Game();
+  // Assign the user to the default room
+  const defaultRoom = 'general';
+  const defaultUsername = 'Anonymous';
+  socket.join(defaultRoom);
 
-  let player = null;
+  socket.emit('reset');
+  socket.emit('room', defaultRoom);
+  socket.emit('character', defaultUsername);
 
-  function reset() {
-    console.log('reset');
-    socket.emit('reset');
-    game.reset();
-    //game.promptLoop();
-    player = game.addPlayer("human", "human");
-    let players = listNames(game.players.map((player) => player.name));
-    socket.emit('set-name', player);
-    socket.emit('message', { player: "System", text: `Your name is ${player}. Current players are ${players}.`});
-  }
+  // Get the last ~10 messages from the database and emit them
+  db.all(
+    `SELECT * FROM messages WHERE room = ? ORDER BY timestamp DESC LIMIT 10;`,
+    [defaultRoom],
+    (err, rows) => {
+      if (err) {
+        console.error(err.message);
+      } else {
+        socket.emit('previous messages', rows.reverse());
+      }
+    }
+  );
 
-  game.onMessage((message) => {
-    console.log(`${message.player}: ${message.text}`);
-    socket.emit('message', message);
-  });
+  // Listen for new messages
+  socket.on('message', (msg) => {
+    const messageData = {
+      room: defaultRoom,
+      character: defaultUsername,
+      ...msg,
+    };
 
-  socket.on('message', (message) => {
-    message.player = player;
-    console.log('(human)');
-    game.send(message);
-  });
-
-  socket.on('set-rate', (rate) => {
-    game.setRate(rate);
+    send(messageData);
   });
 
   socket.on('disconnect', () => {
-    console.log('socket disconnect');
-    game.removePlayer(player);
-    game.kill();
-    console.log('game killed');
+    console.log('user disconnected');
   });
-
-  socket.on('reset', () => {
-    reset();
-  });
-
-  reset();
 });
 
-const port = process.env.PORT || 3000;
-server.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+const PORT = process.env.PORT || 3000;
+http.listen(PORT, () => {
+  console.log(`listening on *:${PORT}`);
 });
 
