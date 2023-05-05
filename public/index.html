@@ -38,6 +38,7 @@
     }
 
     #chat-container {
+      position: relative;
       --push-up: 100px;
       height: calc(var(--vh) + var(--push-up));
       max-width: 600px;
@@ -190,6 +191,22 @@
       color: var(--primary-color);
     }
 
+    #room {
+      position: absolute;
+      top: 6rem;
+      left: 5rem;
+      width: fit-content;
+      padding: 0.5rem 1rem;
+      border-radius: 0 0 1rem 1rem;
+      background-color: var(--frame-bg);
+      color: white;
+      font-size: 2rem;
+      text-transform: capitalize;
+      box-shadow: 1rem 1rem 2rem black,
+        -0.25rem -0.25rem 0.5rem black inset,
+        0.25rem 0.25rem 0.5rem #777 inset;
+    }
+
     /* Scrollbar Styling */
     ::-webkit-scrollbar {
       width: 0.5rem;
@@ -204,6 +221,7 @@
 <body>
 
   <div id="chat-container">
+    <div id="room">Origin</div>
     <div id="message-container">
       <div class="context-message">
         <img src="enmeshed.png" alt="Enmeshed">
@@ -358,6 +376,10 @@
       const messages = document.getElementById('messages');
       messages.innerHTML = '';
       socket.emit('set-rate', currentRate);
+    });
+
+    socket.on('room', function(room) {
+      document.getElementById('room').innerText = room;
     });
 
     document.getElementById('reset').addEventListener('click', reset);

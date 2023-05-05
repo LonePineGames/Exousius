@@ -34,6 +34,11 @@ async function initializeDatabase() {
       text TEXT NOT NULL,
       timestamp TEXT NOT NULL`);
 
+  await makeTable('characters', `
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      room TEXT NOT NULL`);
+
   return db;
 }
 
@@ -54,20 +59,90 @@ async function send(db, message) {
     console.log('Message inserted into the database.');
 
     io.to(message.room).emit('message', messageData);
+
+    await process_actions(db, messageData);
   } catch (err) {
     console.error(err.message);
   }
 }
 
+async function process_actions(db, message) {
+  const actions = parse_actions(message.text);
+
+  if (actions.length === 0) {
+    return;
+  }
+
+  let character = { name: message.character };
+
+  for (const action of actions) {
+    console.log(action);
+    const action_handler = action_handlers[action.name];
+    if (action_handler) {
+      await action_handler(db, character, action);
+    }
+  }
+}
+
+function parse_actions(text) {
+  const segments = text.split('%');
+  // return every other segment, starting with the second
+  return segments.filter((_, i) => i % 2 === 1).map(parse_action);
+}
+
+function parse_action(ntext) {
+  let first_space = ntext.indexOf(' ');
+  if (first_space === -1) {
+    first_space = ntext.length;
+  }
+  return {
+    name: ntext.substring(0, first_space),
+    text: ntext.substring(first_space + 1),
+  };
+}
+
+const action_handlers = {
+  async go(db, character, action) {
+    console.log('go', action.text, character.name);
+    const room = action.text;
+    await db.run(
+      `UPDATE characters SET room = ? WHERE name = ?;`,
+      [room, character.name]
+    );
+
+    socket_table.filter((entry) => entry.character === character.name).forEach((entry) => {
+      entry.socket.leave(character.room);
+      entry.socket.join(room);
+      entry.socket.emit('room', room);
+    });
+  }
+};
+
 app.use(express.static('public'));
+
+let socket_table = [];
+
+function add_socket(socket, character) {
+  socket_table.push({ socket, character });
+}
+
+function remove_socket(socket) {
+  socket_table = socket_table.filter((entry) => entry.socket !== socket);
+}
 
 initializeDatabase().then((db) => {
   io.on('connection', async (socket) => {
     console.log('a user connected');
 
-    const defaultRoom = 'general';
-    const defaultUsername = 'Anonymous';
+    const defaultRoom = 'origin';
+    const defaultUsername = 'Anonymous' + Math.floor(Math.random() * 1000);
     socket.join(defaultRoom);
+    add_socket(socket, defaultUsername);
+
+    await db.run(
+      `INSERT INTO characters (name, room) VALUES (?, ?);`,
+      [defaultUsername, defaultRoom]
+    );
 
     socket.emit('reset');
     socket.emit('room', defaultRoom);
@@ -83,10 +158,15 @@ initializeDatabase().then((db) => {
       console.error(err.message);
     }
 
-    socket.on('message', (msg) => {
+    socket.on('message', async (msg) => {
+      let character = socket_table.find((entry) => entry.socket === socket).character;
+      let room = await db.get(
+        `SELECT room FROM characters WHERE name = ?;`,
+        [character]
+      ).then((row) => row.room);
       const messageData = {
-        room: defaultRoom,
-        character: defaultUsername,
+        room,
+        character,
         ...msg,
       };
 
@@ -95,6 +175,7 @@ initializeDatabase().then((db) => {
 
     socket.on('disconnect', () => {
       console.log('user disconnected');
+      remove_socket(socket);
     });
   });
 
