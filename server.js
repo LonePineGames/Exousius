@@ -44,6 +44,7 @@ async function initializeDatabase() {
       role TEXT NOT NULL,
       name TEXT NOT NULL,
       script TEXT NOT NULL,
+      summoner TEXT NOT NULL,
       memory TEXT,
       room TEXT NOT NULL,
       hp INTEGER NOT NULL,
@@ -391,8 +392,8 @@ const actionHandlers = {
     console.log(script);
 
     await db.run(
-      `INSERT INTO characters (role, name, room, script, hp, shards) VALUES (?, ?, ?, ?, ?, ?);`,
-      ['bot', summonInstance, character.room, script.script, 10, 0]
+      `INSERT INTO characters (role, name, room, script, summoner, hp, shards) VALUES (?, ?, ?, ?, ?, ?, ?);`,
+      ['bot', summonInstance, character.room, script.script, character.name, 10, 0]
     );
   },
 
@@ -616,8 +617,8 @@ initializeDatabase().then((db) => {
 
     if (character === undefined) {
       await db.run(
-        `INSERT INTO characters (role, name, room, script, hp, shards) VALUES (?, ?, ?, ?, ?, ?);`,
-        ['user', name, 'origin', '', 10, 0]
+        `INSERT INTO characters (role, name, room, script, summoner, hp, shards) VALUES (?, ?, ?, ?, ?, ?, ?);`,
+        ['user', name, 'origin', '', 'Self', 10, 0]
       );
 
       await db.run(
