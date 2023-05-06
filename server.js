@@ -32,13 +32,6 @@ async function initializeDatabase() {
     }
   }
 
-  await makeTable('messages', `
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      room TEXT NOT NULL,
-      character TEXT NOT NULL,
-      text TEXT NOT NULL,
-      timestamp TEXT NOT NULL`);
-
   await makeTable('characters', `
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       role TEXT NOT NULL,
@@ -49,6 +42,18 @@ async function initializeDatabase() {
       room TEXT NOT NULL,
       hp INTEGER NOT NULL,
       shards INTEGER NOT NULL`);
+
+  await makeTable('messages', `
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      room TEXT NOT NULL,
+      character TEXT NOT NULL,
+      text TEXT NOT NULL,
+      timestamp TEXT NOT NULL`);
+
+  await makeTable('seen_messages', `
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      message_id INTEGER NOT NULL,
+      character_name TEXT NOT NULL`);
 
   await makeTable('rooms', `
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -72,28 +77,34 @@ async function initializeDatabase() {
   return db;
 }
 
-async function send(db, message) {
-  const messageData = {
+async function send(db, messageData) {
+  const message = {
     timestamp: new Date().toISOString(),
-    ...message,
+    ...messageData,
   };
 
-  console.log(messageData);
+  console.log(`${message.character} (${message.room}): ${message.text}`);
 
-  try {
+  message.id = await db.run(
+    `INSERT INTO messages (room, character, text, timestamp) VALUES (?, ?, ?, ?);`,
+    [message.room, message.character, message.text, message.timestamp]
+  ).then((result) => result.lastID);
+
+  let charactersInRoom = await db.all(
+    `SELECT name FROM characters WHERE room = ?;`,
+    [message.room]
+  );
+
+  charactersInRoom.forEach(async (character) => {
     await db.run(
-      `INSERT INTO messages (room, character, text, timestamp) VALUES (?, ?, ?, ?);`,
-      [messageData.room, messageData.character, messageData.text, messageData.timestamp]
+      `INSERT INTO seen_messages (message_id, character_name) VALUES (?, ?);`,
+      [message.id, character.name]
     );
+  });
 
-    console.log('Message inserted into the database.');
+  io.to(message.room).emit('message', message);
 
-    io.to(message.room).emit('message', messageData);
-
-    await processActions(db, messageData);
-  } catch (err) {
-    console.error(err.message);
-  }
+  await processActions(db, message);
 }
 
 async function processActions(db, message) {
@@ -169,7 +180,6 @@ async function spendShard(db, character) {
 
 let actionHandlers = {
   async go(db, character, action) {
-    console.log('go', character, action);
     const room = action.text;
     const previousRoom = character.room;
     if (room === previousRoom) {
@@ -539,8 +549,13 @@ actionHandlers['return'] = async function(db, character, action) {
     [shards, character.summoner]
   );
 
+  let summoner = await db.get(
+    `SELECT * FROM characters WHERE name = ?;`,
+    [character.summoner]
+  );
+
   socketTable.filter((entry) => entry.character === character.summoner).forEach((entry) => {
-    entry.socket.emit('shards', shards);
+    entry.socket.emit('shards', summoner.shards);
   });
 
   let message = {
@@ -637,6 +652,19 @@ async function generateActionSuggestions(db, characterName) {
   return suggestions;
 }
 
+async function recentMessages(db, character, number) {
+  let seen_messages = await db.all(
+    `SELECT * FROM seen_messages WHERE character_name = ? ORDER BY id DESC LIMIT ?`,
+    [character.name, number]
+  );
+
+  let messages = await db.all(
+    `SELECT * FROM messages WHERE id IN (${seen_messages.reverse().map((msg) => msg.message_id).join(',')})`
+  );
+
+  return messages;
+}
+
 function addSocket(socket, character) {
   socketTable.push({ socket, character });
 }
@@ -671,7 +699,7 @@ initializeDatabase().then((db) => {
 
       await db.run(
         `INSERT INTO scripts (character, name, script) VALUES (?, ?, ?);`,
-        [name, 'Odel', 'I am Odel. I am always loyal to my summoner. I search for shards. When I find nothing, I go to a different place. When I have 5 shards, I return.']
+        [name, 'Odel', 'I am Odel. I am always loyal to my summoner. I search for shards. When I find shards, I keep searching in the same place. When I find nothing, I go to a different place. When I have 5 shards, I return.']
       );
 
       character = await db.get(
@@ -699,11 +727,9 @@ initializeDatabase().then((db) => {
     socket.emit('scripts', scripts);
 
     try {
-      const rows = await db.all(
-        `SELECT * FROM messages WHERE room = ? ORDER BY timestamp DESC LIMIT 10;`,
-        [character.room]
-      );
-      socket.emit('previous messages', rows.reverse());
+      let seenMessages = await recentMessages(db, character, 100);
+      console.log(seenMessages);
+      socket.emit('previous messages', seenMessages);
     } catch (err) {
       console.error(err.message);
     }
@@ -839,11 +865,7 @@ async function promptOnce(db) {
 
   let suggestions = await generateActionSuggestions(db, character.name);
 
-  let history = await db.all(
-    `SELECT * FROM messages WHERE room = ? ORDER BY timestamp DESC LIMIT 10;`,
-    [character.room]
-  );
-  history = history.reverse();
+  let history = await recentMessages(db, character, 20);
 
   let result = await promptBot(character, suggestions, history);
 

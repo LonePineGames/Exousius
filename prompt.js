@@ -31,7 +31,8 @@ ${character.script}
 ### Suggested Actions
 ${suggestions.join('\n')}
 
-Output only ${character.name}'s response. If ${character.name} does an action, output only one of the suggested actions.
+Output only ${character.name}'s response. If ${character.name} does an action, output one of the suggested actions as part of the response. Example:
+${character.name}: Master, I must go! %go origin%
 
 ### History
 ${history.map((h) => `${h.character}: ${h.text}`).join('\n')}
