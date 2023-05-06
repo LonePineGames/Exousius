@@ -7,6 +7,7 @@ const sqlite = require('sqlite');
 const dbFile = './world.db';
 const RomanNumerals = require('roman-numerals');
 const { promptBot } = require('./prompt');
+const { listNames } = require('./names');
 
 let gameRate = 10000;
 let socketTable = [];
@@ -95,7 +96,7 @@ async function send(db, messageData) {
   ).then((result) => result.lastID);
 
   let charactersInRoom = await db.all(
-    `SELECT name FROM characters WHERE room = ?;`,
+    `SELECT name FROM characters WHERE room = ? and hp > 0;`,
     [message.room]
   );
 
@@ -195,12 +196,12 @@ let actionHandlers = {
       return;
     }
 
-    let roomExists = await db.get(
-      `SELECT name FROM rooms WHERE name = ?;`,
+    let roomData = await db.get(
+      `SELECT * FROM rooms WHERE name = ?;`,
       [room]
-    ).then((row) => row !== undefined);
+    );
 
-    if (!roomExists) {
+    if (!roomData) {
       await send(db, {
         room: character.room,
         character: 'Narrator',
@@ -213,11 +214,14 @@ let actionHandlers = {
       `UPDATE characters SET room = ? WHERE name = ?;`,
       [room, character.name]
     );
+    character.room = room;
 
-    socketTable.filter((entry) => entry.character === character.name).forEach((entry) => {
+    let playerInRoom = false;
+    socketTable.filter((entry) => entry.character === character.name).forEach(async (entry) => {
       entry.socket.leave(previousRoom);
       entry.socket.join(room);
       entry.socket.emit('room', room);
+      playerInRoom = true;
     });
 
     await send(db, {
@@ -231,6 +235,10 @@ let actionHandlers = {
       character: 'Narrator',
       text: `${character.name} left to go to the ${room}.`,
     });
+
+    if (playerInRoom) {
+      reportRoom(db, character, room);
+    }
   },
 
   async create(db, character, action) {
@@ -341,7 +349,7 @@ let actionHandlers = {
     });
 
     const charactersInRoom = await db.all(
-      `SELECT * FROM characters WHERE room = ?;`,
+      `SELECT * FROM characters WHERE room = ? and hp > 0;`,
       [character.room]
     );
 
@@ -427,6 +435,15 @@ let actionHandlers = {
       return;
     }
 
+    if (target.hp <= 0) {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `But ${character.name} couldn't strike ${target.name} because ${target.name} was already dead.`,
+      });
+      return;
+    }
+
     if (target.room !== character.room) {
       await send(db, {
         room: character.room,
@@ -476,10 +493,12 @@ let actionHandlers = {
         text: `${target.name} died.`,
       });
 
+      /*
       await db.run(
         `DELETE FROM characters WHERE name = ?;`,
         [target.name]
       );
+      */
     }
 
     socketTable.filter((entry) => entry.character === target.name).forEach((entry) => {
@@ -504,6 +523,15 @@ let actionHandlers = {
         room: character.room,
         character: 'Narrator',
         text: `But ${character.name} couldn't heal ${targetName} because ${targetName} didn't exist.`,
+      });
+      return;
+    }
+
+    if (target.shards < 0) {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `But ${character.name} couldn't heal ${target.name} because ${target.name} had already returned.`,
       });
       return;
     }
@@ -584,9 +612,16 @@ actionHandlers['return'] = async function(db, character, action) {
   }
 
   await db.run(
+    'UPDATE characters SET hp = 0, shards = -1, room = ? WHERE name = ?;',
+    [summonerRoom, character.name]
+  );
+
+  /*
+  await db.run(
     `DELETE FROM characters WHERE name = ?;`,
     [character.name]
   );
+  */
 };
 // END actionHandlers
 
@@ -631,11 +666,11 @@ const actionSuggestions = [
     );
 
     let strike = validCharacters
-      .filter((ch) => ch.name !== character.name)
+      .filter((ch) => ch.name !== character.name && ch.hp > 0)
       .map((ch) => `%strike ${ch.name}%`);
 
     let heal = validCharacters
-      .filter((ch) => ch.hp < 10 && ch.name !== character.name)
+      .filter((ch) => ch.hp < 10 && ch.shards >= 0 && ch.name !== character.name)
       .map((ch) => `%heal ${ch.name}%`);
 
     let me = validCharacters.find((ch) => ch.name === character.name);
@@ -661,6 +696,28 @@ async function generateActionSuggestions(db, characterName) {
   suggestions = suggestions.reduce((acc, val) => acc.concat(val), []);
 
   return suggestions;
+}
+
+async function reportRoom(db, character) {
+  console.log("reportRoom", character);
+  let room = await db.get(
+    `SELECT * FROM rooms WHERE name = ?;`,
+    [character.room]
+  );
+
+  let characters = await db.all(
+    `SELECT name FROM characters WHERE room = ? and hp > 0;`,
+    [character.room]
+  ).then((rows) => rows.map((row) => row.name));
+
+  socketTable.filter((entry) => entry.character === character.name).forEach((entry) => {
+    entry.socket.emit('message', {
+      timestamp: Date.now(),
+      room: character.room,
+      character: 'Narrator',
+      text: `${room.description} In the ${room.name} was ${listNames(characters)}.`,
+    });
+  });
 }
 
 async function recentMessages(db, character, number) {
@@ -748,13 +805,9 @@ initializeDatabase().then((db) => {
     );
     socket.emit('scripts', scripts);
 
-    try {
-      let seenMessages = await recentMessages(db, character, 100);
-      console.log(seenMessages);
-      socket.emit('previous messages', seenMessages);
-    } catch (err) {
-      console.error(err.message);
-    }
+    let seenMessages = await recentMessages(db, character, 100);
+    socket.emit('previous messages', seenMessages);
+    reportRoom(db, character);
 
     socket.on('message', async (msg) => {
       let character = socketTable.find((entry) => entry.socket === socket).character;
@@ -878,7 +931,7 @@ async function gameStep(db) {
 async function promptOnce(db) {
   // randomly select a character
   let character = await db.get(
-    `SELECT * FROM characters WHERE role = 'bot' ORDER BY RANDOM() LIMIT 1;`
+    `SELECT * FROM characters WHERE role = 'bot' and hp > 0 ORDER BY RANDOM() LIMIT 1;`
   );
 
   if (character === undefined) {
