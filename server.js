@@ -294,28 +294,39 @@ initializeDatabase().then((db) => {
   io.on('connection', async (socket) => {
     console.log('a user connected');
 
-    const defaultRoom = 'origin';
-    const defaultUsername = 'Anonymous' + Math.floor(Math.random() * 1000);
-    const defaultShards = 0;
-    const defaultHp = 10;
-    socket.join(defaultRoom);
-    addSocket(socket, defaultUsername);
+    const name = 'Being';
 
-    await db.run(
-      `INSERT INTO characters (name, room, hp, shards) VALUES (?, ?, ?, ?);`,
-      [defaultUsername, defaultRoom, defaultHp, defaultShards]
-    );
+    let character = await db.get(
+      `SELECT * FROM characters WHERE name = ?;`,
+      [name]
+    ).then((row) => row);
+
+    console.log(character);
+
+    if (character === undefined) {
+      await db.run(
+        `INSERT INTO characters (name, room, hp, shards) VALUES (?, ?, ?, ?);`,
+        [name, 'origin', 10, 0]
+      );
+      character = await db.get(
+        `SELECT * FROM characters WHERE name = ?;`,
+        [name]
+      ).then((row) => row);
+    }
+
+    socket.join(character.room);
+    addSocket(socket, character.name);
 
     socket.emit('reset');
-    socket.emit('room', defaultRoom);
-    socket.emit('character', defaultUsername);
-    socket.emit('hp', defaultHp);
-    socket.emit('shards', defaultShards);
+    socket.emit('room', character.room);
+    socket.emit('character', character.name);
+    socket.emit('hp', character.hp);
+    socket.emit('shards', character.shards);
 
     try {
       const rows = await db.all(
         `SELECT * FROM messages WHERE room = ? ORDER BY timestamp DESC LIMIT 10;`,
-        [defaultRoom]
+        [character.room]
       );
       socket.emit('previous messages', rows.reverse());
     } catch (err) {
