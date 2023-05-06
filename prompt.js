@@ -32,14 +32,17 @@ ${character.script}
 ### Suggested Actions
 ${suggestions.join('\n')}
 
-Output only ${character.name}'s response. If ${character.name} does an action, output one of the suggested actions as part of the response. Example:
-${character.name}: Master, I must go! %go origin%
-
 ### History
 ${history.map((h) => `${h.character}: ${h.text}`).join('\n')}
 
+### Context
 I am in the ${character.room}. Creatures in the ${character.room}: ${inRoomText}. I have ${character.hp}/10 HP and I am carrying ${character.shards} shards.
 
+### Instructions
+Output only ${character.name}'s response. Keep the response brief, under 20 words. If ${character.name} remains silent, output an empty string. If ${character.name} does an action, output one of the suggested actions as part of the response. Example:
+${character.name}: Master, I must go! %go forest%
+
+### Response
 ${character.name}: `;
 
   console.log(prompt);

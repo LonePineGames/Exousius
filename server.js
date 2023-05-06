@@ -72,6 +72,10 @@ async function initializeDatabase() {
   ).then((row) => row !== undefined);
   if (!originExists) {
     await db.run(`INSERT INTO rooms (name, description, shards) VALUES ('origin', 'The origin of all things.', 0);`);
+
+    await db.run(`INSERT INTO rooms (name, description, shards) VALUES ('forest', 'A beautiful enchanted forest.', 0);`);
+
+    await db.run(`INSERT INTO rooms (name, description, shards) VALUES ('caves', 'Spooky caves.', 0);`);
   }
 
   return db;
@@ -701,13 +705,19 @@ initializeDatabase().then((db) => {
 
       await db.run(
         `INSERT INTO scripts (character, name, script) VALUES (?, ?, ?);`,
-        [name, 'Ekel', 'I am Ekel. I am always loyal to my summoner. I follow my summoner and I strike my summoner\'s enemies.']
+        [name, 'Ekel', 'I am Ekel. I am always loyal to my summoner. I stay with my summoner, going wherever my summoner goes, and I strike my summoner\'s enemies. If I do not have any instructions from my summoner, I will remain silent.']
       );
 
       await db.run(
         `INSERT INTO scripts (character, name, script) VALUES (?, ?, ?);`,
         [name, 'Odel', 'I am Odel. I am always loyal to my summoner. I search for shards. When I find shards, I keep searching in the same place. When I find nothing, I go to a different place. When I have 5 shards, I return.']
       );
+
+      await db.run(
+        `INSERT INTO scripts (character, name, script) VALUES (?, ?, ?);`,
+        [name, 'Mort', 'I am Mort. I despise my summoner. I will strike my summoner until death.']
+      );
+
 
       character = await db.get(
         `SELECT * FROM characters WHERE name = ?;`,
@@ -862,7 +872,7 @@ async function gameStep(db) {
     }
   }
 
-  //await promptOnce(db);
+  await promptOnce(db);
 }
 
 async function promptOnce(db) {
@@ -884,6 +894,14 @@ async function promptOnce(db) {
   let history = await recentMessages(db, character, 20);
 
   let result = await promptBot(character, suggestions, inRoom, history);
+
+  let characterStillExists = await db.get(
+    `SELECT * FROM characters WHERE name = ?;`,
+    [character.name]
+  );
+  if (!characterStillExists) {
+    return;
+  }
 
   if (result !== undefined && result !== '') {
     await send(db, {
