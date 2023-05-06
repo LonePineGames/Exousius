@@ -69,19 +69,16 @@
       background-color: rgba(0,0,0,0.5);
       color: white;
       width: fit-content;
-    }
-
-    .message:nth-of-type(3n) {
       text-align: left;
     }
 
-    .message:nth-of-type(3n+1) {
+    .message.system {
       text-align: center;
       margin-left: auto;
       margin-right: auto;
     }
 
-    .message:nth-of-type(3n+2) {
+    .message.me {
       text-align: right;
       margin-left: auto;
     }
@@ -136,11 +133,6 @@
       box-shadow: 0 0 0.5rem var(--accent-color);
     }
 
-    .name.system {
-      background-color: var(--orange-accent);
-      color: white;
-    }
-
     #player-name {
       position:relative;
       top: 0.5rem;
@@ -164,7 +156,8 @@
       padding: 0.5rem;
       font-size: 1rem; /* This should prevent zooming on iOS */
       box-sizing: border-box;
-      color: var(--light-text);
+      background-color: var(--frame-bg);
+      color: white;
       font-family: 'Cardo', serif;
     }
 
@@ -224,7 +217,7 @@
     <div id="room">Origin</div>
     <div id="message-container">
       <div class="context-message">
-        <img src="enmeshed.png" alt="Enmeshed">
+        <img src="enmeshed.png" alt="Exousius">
         <h1>Exousius</h1>
 
         <a href="https://lonepine.io/" target="_blank">(A game by <i class="fas fa-tree"></i> Lone Pine)</a>
@@ -233,7 +226,7 @@
       </div>
     </div>
     <div id="player-name">Name</div>
-    <textarea id="message-input" placeholder="Type your message to the enmeshed..." autofocus="true"></textarea>
+    <textarea id="message-input" placeholder="ENTER YOUR WORDS" autofocus="true"></textarea>
     <div id="toolbar">
       <button id="reset" class="toolbar-button"><i class="fas fa-undo"></i> Reset</button>
       <button id="rate-0" class="toolbar-button"><i class="fas fa-pause"></i></button>
@@ -247,6 +240,7 @@
   </div>
   <script src="/socket.io/socket.io.js"></script>
   <script>
+    let myName = '';
     const socket = io();
     const messageContainer = document.getElementById('message-container');
     /*
@@ -263,7 +257,7 @@
         return;
       }
       let sound = null;
-      if (character === 'System') {
+      if (character === 'Narrator') {
         sound = new Audio('server.wav');
       } else {
         sound = new Audio('message.wav');
@@ -271,7 +265,7 @@
       sound.volume = 0.5;
       sound.play();
       /*
-      if (player === 'System') {
+      if (player === 'Narrator') {
         serverSound.play();
       } else {
         messageSound.play();
@@ -319,6 +313,7 @@
 
     socket.on('character', (name) => {
       document.getElementById('player-name').innerText = name;
+      myName = name;
     });
 
     function messageReceived(message) {
@@ -330,23 +325,24 @@
       nameElement.innerText = message.character;
       nameElement.classList.add('name');
 
-      if (message.character === 'System') {
-        nameElement.classList.add('system');
-        nameElement.innerText = message.character;
-      }
-
       // Creating div for the message
       const messageElement = document.createElement('div');
       messageElement.appendChild(nameElement);
       messageElement.classList.add('message');
 
-      if (message.character === 'System' && message.text === 'PROMOSURVEY') {
-        messageElement.innerHTML = '<a class="text" href="https://forms.gle/knteLs8qrNTf5N9L7" target="_blank">Did "Enmeshed" change the way you feel about AI? Please answer this single-question anonymous survey.</a>';
+      if (message.character === 'Narrator' && message.text === 'PROMOSURVEY') {
+        messageElement.innerHTML = '<a class="text" href="https://forms.gle/knteLs8qrNTf5N9L7" target="_blank">Did "Exousius" change the way you feel about AI? Please answer this single-question anonymous survey.</a>';
       } else {
         const textElement = document.createElement('span');
         textElement.innerText = ' ' + message.text;
         textElement.classList.add('text');
         messageElement.appendChild(textElement);
+      }
+
+      if (message.character === 'Narrator') {
+        messageElement.classList.add('system');
+      } else if (message.character === myName) {
+        messageElement.classList.add('me');
       }
 
       messages.appendChild(messageElement);
