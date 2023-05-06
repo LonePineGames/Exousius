@@ -145,6 +145,7 @@ async function spendShard(db, character) {
 
 const actionHandlers = {
   async go(db, character, action) {
+    console.log('go', character, action);
     console.log('go', action.text, character.name);
     const room = action.text;
     const previousRoom = character.room;
@@ -276,6 +277,48 @@ const actionHandlers = {
       });
     }
   },
+
+  async destroy(db, character, action) {
+    if (character.room === 'origin') {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `But no one can destroy the origin, not even ${character.name}.`,
+      });
+      return;
+    }
+
+    if (!await spendShard(db, character)) {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `But ${character.name} couldn't destroy the ${character.room} because they don't have any shards.`,
+      });
+      return;
+    }
+
+    await send(db, {
+      room: character.room,
+      character: 'Narrator',
+      text: `${character.name} used a shard and destroyed the ${character.room}.`,
+    });
+
+    const charactersInRoom = await db.all(
+      `SELECT * FROM characters WHERE room = ?;`,
+      [character.room]
+    ).then((rows) => rows);
+
+    console.log(charactersInRoom);
+
+    charactersInRoom.forEach(async (characterInRoom) => {
+      await executeAction(db, character, { name: 'go', text: 'origin' });
+    });
+
+    await db.run(
+      `DELETE FROM rooms WHERE name = ?;`,
+      [character.room]
+    );
+  }
 };
 
 app.use(express.static('public'));
