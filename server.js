@@ -6,6 +6,7 @@ const sqlite3 = require('sqlite3').verbose();
 const sqlite = require('sqlite');
 const dbFile = './world.db';
 const RomanNumerals = require('roman-numerals');
+const { promptBot } = require('./prompt');
 
 let gameRate = 10000;
 let socketTable = [];
@@ -40,6 +41,7 @@ async function initializeDatabase() {
 
   await makeTable('characters', `
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      role TEXT NOT NULL,
       name TEXT NOT NULL,
       script TEXT NOT NULL,
       memory TEXT,
@@ -326,7 +328,7 @@ const actionHandlers = {
     const charactersInRoom = await db.all(
       `SELECT * FROM characters WHERE room = ?;`,
       [character.room]
-    ).then((rows) => rows);
+    );
 
     console.log(charactersInRoom);
 
@@ -389,8 +391,8 @@ const actionHandlers = {
     console.log(script);
 
     await db.run(
-      `INSERT INTO characters (name, room, script, hp, shards) VALUES (?, ?, ?, ?, ?);`,
-      [summonInstance, character.room, script.script, 10, 0]
+      `INSERT INTO characters (role, name, room, script, hp, shards) VALUES (?, ?, ?, ?, ?, ?);`,
+      ['bot', summonInstance, character.room, script.script, 10, 0]
     );
   },
 
@@ -399,7 +401,7 @@ const actionHandlers = {
     let target = await db.get(
       `SELECT * FROM characters WHERE name = ?;`,
       [targetName]
-    ).then((row) => row);
+    );
 
     if (target === undefined) {
       await send(db, {
@@ -471,7 +473,7 @@ const actionHandlers = {
     let target = await db.get(
       `SELECT * FROM characters WHERE name = ?;`,
       [targetName]
-    ).then((row) => row);
+    );
 
     if (target === undefined) {
       await send(db, {
@@ -535,6 +537,10 @@ const actionSuggestions = [
   },
 
   async function summonSuggestions(db, character) {
+    if (character.role === 'bot') {
+      return [];
+    }
+
     let scripts = await db.all(
       `SELECT name FROM scripts WHERE character = ?;`,
       [character.name]
@@ -604,14 +610,14 @@ initializeDatabase().then((db) => {
     let character = await db.get(
       `SELECT * FROM characters WHERE name = ?;`,
       [name]
-    ).then((row) => row);
+    );
 
     console.log(character);
 
     if (character === undefined) {
       await db.run(
-        `INSERT INTO characters (name, room, script, hp, shards) VALUES (?, ?, ?, ?, ?);`,
-        [name, 'origin', '', 10, 0]
+        `INSERT INTO characters (role, name, room, script, hp, shards) VALUES (?, ?, ?, ?, ?, ?);`,
+        ['user', name, 'origin', '', 10, 0]
       );
 
       await db.run(
@@ -627,7 +633,7 @@ initializeDatabase().then((db) => {
       character = await db.get(
         `SELECT * FROM characters WHERE name = ?;`,
         [name]
-      ).then((row) => row);
+      );
     }
 
     socket.join(character.room);
@@ -762,7 +768,7 @@ async function gameStep(db) {
     //randomly select a room
     let room = await db.get(
       `SELECT * FROM rooms ORDER BY RANDOM() LIMIT 1;`
-    ).then((row) => row);
+    );
 
     if (room !== undefined) {
       await db.run(
@@ -774,16 +780,34 @@ async function gameStep(db) {
     }
   }
 
-  let ekel = await db.get(
-    `SELECT * FROM characters WHERE name = ?;`,
-    ['Ekel']
-  ).then((row) => row);
+  await promptOnce(db);
+}
 
-  if (ekel !== undefined) {
-    send(db, {
-      room: ekel.room,
-      character: 'Ekel',
-      text: 'Take this! %strike Being%',
+async function promptOnce(db) {
+  // randomly select a character
+  let character = await db.get(
+    `SELECT * FROM characters WHERE role = 'bot' ORDER BY RANDOM() LIMIT 1;`
+  );
+
+  if (character === undefined) {
+    return;
+  }
+
+  let suggestions = await generateActionSuggestions(db, character.name);
+
+  let history = await db.all(
+    `SELECT * FROM messages WHERE room = ? ORDER BY timestamp DESC LIMIT 10;`,
+    [character.room]
+  );
+  history = history.reverse();
+
+  let result = await promptBot(character, suggestions, history);
+
+  if (result !== undefined && result !== '') {
+    await send(db, {
+      room: character.room,
+      character: character.name,
+      text: result,
     });
   }
 }

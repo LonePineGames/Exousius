@@ -20,7 +20,48 @@ const configuration = new Configuration({
 });
 const openai = new OpenAIApi(configuration);
 
-async function promptBot(bot, game) {
+async function promptBot(character, suggestions, history) {
+  console.log('promptBot', character, suggestions, history);
+  const prompt = 
+
+`This is a text-based role playing game set in a medieval fantasy world. I am ${character.name}, a demon summoned by ${character.summoner}. I am in the ${character.room}. I have ${character.hp}/10 HP and I am carrying ${character.shards} shards.
+
+${character.script}
+
+### Suggested Actions
+${suggestions.join('\n')}
+
+Output only ${character.name}'s response. If ${character.name} does an action, output only one of the suggested actions.
+
+### History
+${history.map((h) => `${h.character}: ${h.text}`).join('\n')}
+${character.name}: `;
+
+  console.log(prompt);
+
+  try {
+    const completion = await openai.createChatCompletion({
+      model: "gpt-4",
+      temperature: 1.2,
+      max_tokens: 80,
+      messages: [{role: "user", content: prompt}],
+    });
+    const message = completion.data.choices[0].message.content;
+    console.log('message', message);
+    const lines = message.split("\n")
+    const firstLine = lines[0].trim();
+    return firstLine;
+  } catch (error) {
+    console.error(error);
+  }
+
+  return '';
+}
+
+module.exports = { promptBot };
+
+
+  /*
   let { humans, enmeshed } = game.countPlayers();
   const players = game.players.filter((p) => !p.silenced);
   const words = 5 + Math.floor(Math.random() * 15);
@@ -145,3 +186,4 @@ const personalities = [
 ];
 
 module.exports = { promptBot, personalities };
+*/
