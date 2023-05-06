@@ -99,6 +99,12 @@ async function executeAction(db, character, action) {
   const actionHandler = actionHandlers[action.name];
   if (actionHandler) {
     await actionHandler(db, character, action);
+  } else {
+    await send(db, {
+      room: character.room,
+      character: 'Narrator',
+      text: `But ${character.name} didn't know how to ${action.name}.`,
+    });
   }
 }
 
@@ -146,7 +152,6 @@ async function spendShard(db, character) {
 const actionHandlers = {
   async go(db, character, action) {
     console.log('go', character, action);
-    console.log('go', action.text, character.name);
     const room = action.text;
     const previousRoom = character.room;
     if (room === previousRoom) {
@@ -317,6 +322,43 @@ const actionHandlers = {
     await db.run(
       `DELETE FROM rooms WHERE name = ?;`,
       [character.room]
+    );
+  },
+
+  async summon(db, character, action) {
+    const summonName = action.text;
+    let summonExists = await db.get(
+      `SELECT name FROM characters WHERE name = ?;`,
+      [summonName]
+    ).then((row) => row !== undefined);
+
+    if (summonExists) {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `But ${character.name} couldn't summon ${summonName} because that being has already been summoned.`,
+      });
+      return;
+    }
+
+    if (!await spendShard(db, character)) {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `But ${character.name} couldn't summon ${summonName} because they don't have any shards.`,
+      });
+      return;
+    }
+
+    await send(db, {
+      room: character.room,
+      character: 'Narrator',
+      text: `${character.name} used a shard and summoned ${summonName}.`,
+    });
+
+    await db.run(
+      `INSERT INTO characters (name, room, hp, shards) VALUES (?, ?, ?, ?);`,
+      [summonName, character.room, 10, 0]
     );
   }
 };
