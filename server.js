@@ -6,6 +6,9 @@ const sqlite3 = require('sqlite3').verbose();
 const sqlite = require('sqlite');
 const dbFile = './world.db';
 
+let gameRate = 10000;
+let socketTable = [];
+
 app.use(express.static('public'));
 
 async function initializeDatabase() {
@@ -431,12 +434,71 @@ const actionHandlers = {
       entry.socket.emit('hp', target.hp);
       entry.socket.emit('shards', target.shards);
     });
+  },
+
+  async heal(db, character, action) {
+    let targetName = action.text;
+
+    if (targetName == '') {
+      targetName = character.name;
+    }
+    let target = await db.get(
+      `SELECT * FROM characters WHERE name = ?;`,
+      [targetName]
+    ).then((row) => row);
+
+    if (target === undefined) {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `But ${character.name} couldn't heal ${targetName} because ${targetName} didn't exist.`,
+      });
+      return;
+    }
+
+    if (target.room !== character.room) {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `But ${character.name} couldn't heal ${target.name} because ${target.name} wasn't in the ${character.room}`,
+      });
+      return;
+    }
+
+    if (target.hp >= 10) {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `But ${character.name} couldn't heal ${target.name} because ${target.name} was already at full health.`,
+      });
+      return;
+    }
+
+    let heal = Math.ceil(1 + character.shards / 2);
+    heal = Math.min(heal, 10 - target.hp);
+    console.log(character, target, heal);
+
+    await send(db, {
+      room: character.room,
+      character: 'Narrator',
+      text: `${character.name} healed ${target.name} for ${heal}HP.`,
+    });
+
+    target.hp += heal;
+
+    await db.run(
+      `UPDATE characters SET hp = ? WHERE id = ?;`,
+      [target.hp, target.id]
+    );
+
+    socketTable.filter((entry) => entry.character === target.name).forEach((entry) => {
+      entry.socket.emit('hp', target.hp);
+    });
   }
 };
+// END socketHandlers
 
 app.use(express.static('public'));
-
-let socketTable = [];
 
 function addSocket(socket, character) {
   socketTable.push({ socket, character });
@@ -517,7 +579,7 @@ initializeDatabase().then((db) => {
 
   function doGameStep() {
     gameStep(db);
-    setTimeout(doGameStep, 1000);
+    setTimeout(doGameStep, gameRate);
   }
   doGameStep();
 
