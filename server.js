@@ -5,6 +5,7 @@ const io = require('socket.io')(http);
 const sqlite3 = require('sqlite3').verbose();
 const sqlite = require('sqlite');
 const dbFile = './world.db';
+const RomanNumerals = require('roman-numerals');
 
 let gameRate = 10000;
 let socketTable = [];
@@ -40,6 +41,8 @@ async function initializeDatabase() {
   await makeTable('characters', `
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
+      script TEXT NOT NULL,
+      memory TEXT,
       room TEXT NOT NULL,
       hp INTEGER NOT NULL,
       shards INTEGER NOT NULL`);
@@ -49,6 +52,12 @@ async function initializeDatabase() {
       name TEXT NOT NULL,
       description TEXT NOT NULL,
       shards INTEGER NOT NULL`);
+
+  await makeTable('scripts', `
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      character TEXT NOT NULL,
+      name TEXT NOT NULL,
+      script TEXT NOT NULL`);
 
   let originExists = await db.get(
     `SELECT name FROM rooms WHERE name = 'origin';`
@@ -333,16 +342,17 @@ const actionHandlers = {
 
   async summon(db, character, action) {
     const summonName = action.text;
-    let summonExists = await db.get(
-      `SELECT name FROM characters WHERE name = ?;`,
-      [summonName]
-    ).then((row) => row !== undefined);
 
-    if (summonExists) {
+    const script = await db.get(
+      `SELECT * FROM scripts WHERE name = ?;`,
+      [summonName]
+    );
+
+    if (script === undefined) {
       await send(db, {
         room: character.room,
         character: 'Narrator',
-        text: `But ${character.name} couldn't summon ${summonName} because ${summonName} has already been summoned.`,
+        text: `But ${character.name} couldn't summon ${summonName} because there isn't a script named ${summonName}.`,
       });
       return;
     }
@@ -356,15 +366,31 @@ const actionHandlers = {
       return;
     }
 
+    let summonInstance = summonName;
+    for (let num = 1;; num++) {
+      let romanNumeral = RomanNumerals.toRoman(num);
+      summonInstance = `${summonName}-${romanNumeral}`;
+      let summonExists = await db.get(
+        `SELECT name FROM characters WHERE name = ?;`,
+        [summonInstance]
+      ).then((row) => row !== undefined);
+
+      if (!summonExists) {
+        break;
+      }
+    }
+
     await send(db, {
       room: character.room,
       character: 'Narrator',
-      text: `${character.name} used a shard and summoned ${summonName}.`,
+      text: `${character.name} used a shard and summoned ${summonInstance}.`,
     });
 
+    console.log(script);
+
     await db.run(
-      `INSERT INTO characters (name, room, hp, shards) VALUES (?, ?, ?, ?);`,
-      [summonName, character.room, 10, 0]
+      `INSERT INTO characters (name, room, script, hp, shards) VALUES (?, ?, ?, ?, ?);`,
+      [summonInstance, character.room, script.script, 10, 0]
     );
   },
 
@@ -501,14 +527,19 @@ const actionHandlers = {
 const actionSuggestions = [
   async function goSuggestions(db, character) {
     const rooms = await db.all(
-      `SELECT * FROM rooms;`
+      `SELECT name FROM rooms where name != ?;`,
+      [character.room]
     );
 
     return rooms.map((room) => `%go ${room.name}%`);
   },
 
   async function summonSuggestions(db, character) {
-    return [];
+    let scripts = await db.all(
+      `SELECT name FROM scripts WHERE character = ?;`,
+      [character.name]
+    );
+    return scripts.map((script) => `%summon ${script.name}%`);
   },
 
   async function searchSuggestions(db, character) {
@@ -579,9 +610,20 @@ initializeDatabase().then((db) => {
 
     if (character === undefined) {
       await db.run(
-        `INSERT INTO characters (name, room, hp, shards) VALUES (?, ?, ?, ?);`,
-        [name, 'origin', 10, 0]
+        `INSERT INTO characters (name, room, script, hp, shards) VALUES (?, ?, ?, ?, ?);`,
+        [name, 'origin', '', 10, 0]
       );
+
+      await db.run(
+        `INSERT INTO scripts (character, name, script) VALUES (?, ?, ?);`,
+        [name, 'Ekel', 'I am Ekel. I am always loyal to my summoner. I follow my summoner and I strike my summoner\'s enemies.']
+      );
+
+      await db.run(
+        `INSERT INTO scripts (character, name, script) VALUES (?, ?, ?);`,
+        [name, 'Odel', 'I am Odel. I am always loyal to my summoner. I search for shards. When I find nothing, I go to a different place. When I find a shard, I return.']
+      );
+
       character = await db.get(
         `SELECT * FROM characters WHERE name = ?;`,
         [name]
@@ -599,6 +641,12 @@ initializeDatabase().then((db) => {
 
     let suggestions = await generateActionSuggestions(db, character.name);
     socket.emit('suggestions', suggestions);
+
+    let scripts = await db.all(
+      `SELECT name, script FROM scripts WHERE character = ?;`,
+      [character.name]
+    );
+    socket.emit('scripts', scripts);
 
     try {
       const rows = await db.all(
@@ -632,6 +680,28 @@ initializeDatabase().then((db) => {
       console.log('setting rate to', rate);
       gameRate = rate;
     });
+
+    socket.on('write-script', async (script) => {
+      let character = socketTable.find((entry) => entry.socket === socket).character;
+
+      // if the script already exists, update it
+      let existingScript = await db.get(
+        `SELECT * FROM scripts WHERE character = ? AND name = ?;`,
+        [character, script.name]
+      );
+      if (existingScript !== undefined) {
+        await db.run(
+          `UPDATE scripts SET script = ? WHERE character = ? AND name = ?;`,
+          [script.script, character, script.name]
+        );
+      } else {
+        await db.run(
+          `INSERT INTO scripts (character, name, script) VALUES (?, ?, ?);`,
+          [character, script.name, script.script]
+        );
+      }
+    });
+
 
     socket.on('disconnect', () => {
       console.log('user disconnected');
@@ -688,7 +758,7 @@ async function gameStep(db) {
   let shardCount = await getTotalShards(db);
   console.log(`There are ${shardCount} shards in play.`);
 
-  if (shardCount < 10) {
+  if (shardCount < 100) {
     //randomly select a room
     let room = await db.get(
       `SELECT * FROM rooms ORDER BY RANDOM() LIMIT 1;`
