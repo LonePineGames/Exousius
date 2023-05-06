@@ -88,7 +88,10 @@ async function processActions(db, message) {
     return;
   }
 
-  let character = { name: message.character, room: message.room };
+  let character = await db.get(
+    `SELECT * FROM characters WHERE name = ?;`,
+    [message.character]
+  );
 
   for (const action of actions) {
     await executeAction(db, character, action);
@@ -278,7 +281,7 @@ const actionHandlers = {
       await send(db, {
         room: character.room,
         character: 'Narrator',
-        text: `${character.name} found nothing.`,
+        text: `But ${character.name} found nothing.`,
       });
     }
   },
@@ -336,7 +339,7 @@ const actionHandlers = {
       await send(db, {
         room: character.room,
         character: 'Narrator',
-        text: `But ${character.name} couldn't summon ${summonName} because that being has already been summoned.`,
+        text: `But ${character.name} couldn't summon ${summonName} because ${summonName} has already been summoned.`,
       });
       return;
     }
@@ -360,6 +363,74 @@ const actionHandlers = {
       `INSERT INTO characters (name, room, hp, shards) VALUES (?, ?, ?, ?);`,
       [summonName, character.room, 10, 0]
     );
+  },
+
+  async strike(db, character, action) {
+    let targetName = action.text;
+    let target = await db.get(
+      `SELECT * FROM characters WHERE name = ?;`,
+      [targetName]
+    ).then((row) => row);
+
+    if (target === undefined) {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `But ${character.name} couldn't strike ${targetName} because ${targetName} didn't exist.`,
+      });
+      return;
+    }
+
+    if (target.room !== character.room) {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `But ${character.name} couldn't strike ${target.name} because ${target.name} wasn't in the ${character.room}`,
+      });
+      return;
+    }
+
+    let damage = 1 + character.shards;
+    console.log(character, target, damage);
+
+    await send(db, {
+      room: character.room,
+      character: 'Narrator',
+      text: `${character.name} struck ${target.name} for ${damage} damage.`,
+    });
+
+    target.hp -= damage;
+
+    if (target.hp <= 0) {
+      // Sacrifice shards to revive
+      let shardsToUse = Math.min(target.shards, -target.hp);
+      target.hp += shardsToUse;
+      target.shards -= shardsToUse;
+      target.hp = Math.max(target.hp, 0);
+    }
+
+    await db.run(
+      `UPDATE characters SET hp = ?, shards = ? WHERE name = ?;`,
+      [target.hp, target.shards, target.name]
+    );
+
+    if (target.hp <= 0) {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `${target.name} died.`,
+      });
+
+      await db.run(
+        `DELETE FROM characters WHERE name = ?;`,
+        [target.name]
+      );
+    }
+
+    socketTable.filter((entry) => entry.character === target.name).forEach((entry) => {
+      entry.socket.emit('hp', target.hp);
+      entry.socket.emit('shards', target.shards);
+    });
   }
 };
 
@@ -487,15 +558,30 @@ async function gameStep(db) {
   if (shardCount < 10) {
     //randomly select a room
     let room = await db.get(
-      `SELECT id FROM rooms ORDER BY RANDOM() LIMIT 1;`
-    ).then((row) => row.id);
+      `SELECT * FROM rooms ORDER BY RANDOM() LIMIT 1;`
+    ).then((row) => row);
 
-    await db.run(
-      `UPDATE rooms SET shards = shards + 1 WHERE id = ?;`,
-      [room]
-    );
+    if (room !== undefined) {
+      await db.run(
+        `UPDATE rooms SET shards = shards + 1 WHERE id = ?;`,
+        [room.id]
+      );
 
-    console.log(`A shard appeared in room ${room}.`);
+      console.log(`A shard appeared in the ${room.name}.`);
+    }
+  }
+
+  let ekel = await db.get(
+    `SELECT * FROM characters WHERE name = ?;`,
+    ['Ekel']
+  ).then((row) => row);
+
+  if (ekel !== undefined) {
+    send(db, {
+      room: ekel.room,
+      character: 'Ekel',
+      text: 'Take this! %strike Being%',
+    });
   }
 }
 
