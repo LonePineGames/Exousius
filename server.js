@@ -496,9 +496,65 @@ const actionHandlers = {
     });
   }
 };
-// END socketHandlers
+// END actionHandlers
 
-app.use(express.static('public'));
+const actionSuggestions = [
+  async function goSuggestions(db, character) {
+    const rooms = await db.all(
+      `SELECT * FROM rooms;`
+    );
+
+    return rooms.map((room) => `%go ${room.name}%`);
+  },
+
+  async function summonSuggestions(db, character) {
+    return [];
+  },
+
+  async function searchSuggestions(db, character) {
+    return ['%search%'];
+  },
+
+  async function strikeHealSuggestions(db, character) {
+    let validCharacters = await db.all(
+      `SELECT * FROM characters WHERE room = ?;`,
+      [character.room]
+    );
+
+    let strike = validCharacters
+      .filter((ch) => ch.name !== character.name)
+      .map((ch) => `%strike ${ch.name}%`);
+
+    let heal = validCharacters
+      .filter((ch) => ch.hp < 10 && ch.name !== character.name)
+      .map((ch) => `%heal ${ch.name}%`);
+
+    let me = validCharacters.find((ch) => ch.name === character.name);
+    if (me !== undefined && me.hp < 10) {
+      heal.push('%heal%');
+    }
+
+    return strike.concat(heal);
+  },
+];
+
+async function generateActionSuggestions(db, characterName) {
+  let character = await db.get(
+    `SELECT * FROM characters WHERE name = ?;`,
+    [characterName]
+  );
+
+  let promises = actionSuggestions.map(async (func) => {
+    return await func(db, character);
+  });
+
+  let suggestions = await Promise.all(promises);
+  suggestions = suggestions.reduce((acc, val) => acc.concat(val), []);
+
+  console.log(suggestions);
+
+  return suggestions;
+}
 
 function addSocket(socket, character) {
   socketTable.push({ socket, character });
@@ -541,6 +597,9 @@ initializeDatabase().then((db) => {
     socket.emit('hp', character.hp);
     socket.emit('shards', character.shards);
 
+    let suggestions = await generateActionSuggestions(db, character.name);
+    socket.emit('suggestions', suggestions);
+
     try {
       const rows = await db.all(
         `SELECT * FROM messages WHERE room = ? ORDER BY timestamp DESC LIMIT 10;`,
@@ -563,7 +622,15 @@ initializeDatabase().then((db) => {
         ...msg,
       };
 
-      send(db, messageData);
+      await send(db, messageData);
+
+      let suggestions = await generateActionSuggestions(db, character);
+      socket.emit('suggestions', suggestions);
+    });
+
+    socket.on('set-rate', (rate) => {
+      console.log('setting rate to', rate);
+      gameRate = rate;
     });
 
     socket.on('disconnect', () => {
@@ -578,8 +645,12 @@ initializeDatabase().then((db) => {
   });
 
   function doGameStep() {
-    gameStep(db);
-    setTimeout(doGameStep, gameRate);
+    if (gameRate > 0) {
+      gameStep(db);
+      setTimeout(doGameStep, gameRate);
+    } else {
+      setTimeout(doGameStep, 1000);
+    }
   }
   doGameStep();
 

@@ -167,7 +167,8 @@
     }
 
     #toolbar {
-      display: flex;
+      display: none;
+      /*display: flex;*/
       justify-content: space-between;
       background-color: var(--accent-color);
       border-radius: 1rem 0 1rem 0;
@@ -236,6 +237,22 @@
       text-shadow: 0 0 0.5rem black;
     }
 
+    #suggestions {
+      margin-top: 0.5rem;
+    }
+
+    .suggestion {
+      margin: 0.25rem 0;
+      padding: 0 0.5rem 0rem 0.5rem;
+      width: fit-content;
+
+      font-weight: bold;
+      background-color: var(--accent-color);
+      color: white;
+      border-radius: 1rem 0 1rem 0;
+      border: none;
+    }
+
     /* Scrollbar Styling */
     ::-webkit-scrollbar {
       width: 0.5rem;
@@ -274,6 +291,8 @@
       <button id="mute" class="toolbar-button active"><i class="fas fa-volume-up"></i></button>
       <button id="send" class="toolbar-button">Send <i class="fas fa-paper-plane"></i></button>
     </div>
+
+    <div id="suggestions"></div>
 
   </div>
   <script src="/socket.io/socket.io.js"></script>
@@ -422,6 +441,21 @@
 
     socket.on('hp', function(hp) {
       document.getElementById('hp').innerText = hp;
+    });
+
+    socket.on('suggestions', function(suggestions) {
+      let suggestionsElement = document.getElementById('suggestions');
+      suggestionsElement.innerHTML = '';
+
+      suggestions.forEach((suggestion) => {
+        let suggestionElement = document.createElement('button');
+        suggestionElement.innerText = suggestion;
+        suggestionElement.classList.add('suggestion');
+        suggestionElement.addEventListener('click', () => {
+          socket.emit('message', {text: suggestion});
+        });
+        suggestionsElement.appendChild(suggestionElement);
+      });
     });
 
     document.getElementById('reset').addEventListener('click', reset);
