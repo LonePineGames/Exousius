@@ -115,6 +115,16 @@ const action_handlers = {
   async go(db, character, action) {
     console.log('go', action.text, character.name);
     const room = action.text;
+    const previous_room = character.room;
+    if (room === previous_room) {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `But ${character.name} was already in the ${room}.`,
+      });
+      return;
+    }
+
     let room_exists = await db.get(
       `SELECT name FROM rooms WHERE name = ?;`,
       [room]
@@ -135,9 +145,21 @@ const action_handlers = {
     );
 
     socket_table.filter((entry) => entry.character === character.name).forEach((entry) => {
-      entry.socket.leave(character.room);
+      entry.socket.leave(previous_room);
       entry.socket.join(room);
       entry.socket.emit('room', room);
+    });
+
+    await send(db, {
+      room: room,
+      character: 'Narrator',
+      text: `${character.name} appeared in the ${room}.`,
+    });
+
+    await send(db, {
+      room: previous_room,
+      character: 'Narrator',
+      text: `${character.name} left.`,
     });
   },
 
