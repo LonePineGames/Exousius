@@ -448,7 +448,22 @@
       document.getElementById('hp').innerText = hp;
     });
 
+    let lastSuggestions = [];
     socket.on('suggestions', function(suggestions) {
+      if (lastSuggestions.length === suggestions.length) {
+        let same = true;
+        for (let i = 0; i < suggestions.length; i++) {
+          if (suggestions[i] !== lastSuggestions[i]) {
+            same = false;
+            break;
+          }
+        }
+        if (same) {
+          return;
+        }
+      }
+      lastSuggestions = suggestions;
+
       let suggestionsElement = document.getElementById('suggestions');
       suggestionsElement.innerHTML = '';
 

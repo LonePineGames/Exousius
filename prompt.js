@@ -20,11 +20,12 @@ const configuration = new Configuration({
 });
 const openai = new OpenAIApi(configuration);
 
-async function promptBot(character, suggestions, history) {
-  console.log('promptBot', character, suggestions, history);
+async function promptBot(character, suggestions, inRoom, history) {
+  console.log('promptBot', character, inRoom);
+  let inRoomText = listNames(inRoom.map((p) => p.name));
   const prompt = 
 
-`This is a text-based role playing game set in a medieval fantasy world. I am ${character.name}, a demon summoned by ${character.summoner}. I am in the ${character.room}. I have ${character.hp}/10 HP and I am carrying ${character.shards} shards.
+`This is a text-based role playing game set in a medieval fantasy world. I am ${character.name}, a demon summoned by ${character.summoner}.
 
 ${character.script}
 
@@ -36,6 +37,9 @@ ${character.name}: Master, I must go! %go origin%
 
 ### History
 ${history.map((h) => `${h.character}: ${h.text}`).join('\n')}
+
+I am in the ${character.room}. Creatures in the ${character.room}: ${inRoomText}. I have ${character.hp}/10 HP and I am carrying ${character.shards} shards.
+
 ${character.name}: `;
 
   console.log(prompt);

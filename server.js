@@ -434,22 +434,31 @@ let actionHandlers = {
 
     let damage = 1 + character.shards;
     console.log(character, target, damage);
-
-    await send(db, {
-      room: character.room,
-      character: 'Narrator',
-      text: `${character.name} struck ${target.name} for ${damage} damage.`,
-    });
-
+    let sacrifice = 0;
     target.hp -= damage;
 
     if (target.hp <= 0) {
       // Sacrifice shards to revive
-      let shardsToUse = Math.min(target.shards, -target.hp);
-      target.hp += shardsToUse;
-      target.shards -= shardsToUse;
-      target.hp = Math.max(target.hp, 0);
+      sacrifice = Math.min(target.shards, -target.hp+1);
+      target.hp += sacrifice;
+      target.shards -= sacrifice;
+
+      if (target.hp < 0) {
+        damage += target.hp;
+        target.hp = 0;
+      }
     }
+
+    let message = `${character.name} struck ${target.name} for ${damage} damage.`;
+    if (sacrifice > 0) {
+      message += ` ${target.name} sacrificed ${sacrifice} shards to stay alive.`;
+    }
+    await send(db, {
+      room: character.room,
+      character: 'Narrator',
+      text: message,
+    });
+
 
     await db.run(
       `UPDATE characters SET hp = ?, shards = ? WHERE name = ?;`,
@@ -647,8 +656,6 @@ async function generateActionSuggestions(db, characterName) {
   let suggestions = await Promise.all(promises);
   suggestions = suggestions.reduce((acc, val) => acc.concat(val), []);
 
-  console.log(suggestions);
-
   return suggestions;
 }
 
@@ -720,6 +727,11 @@ initializeDatabase().then((db) => {
     let suggestions = await generateActionSuggestions(db, character.name);
     socket.emit('suggestions', suggestions);
 
+    let suggestionsInterval = setInterval(async () => {
+      let suggestions = await generateActionSuggestions(db, character.name);
+      socket.emit('suggestions', suggestions);
+    }, 250);
+
     let scripts = await db.all(
       `SELECT name, script FROM scripts WHERE character = ?;`,
       [character.name]
@@ -748,8 +760,8 @@ initializeDatabase().then((db) => {
 
       await send(db, messageData);
 
-      let suggestions = await generateActionSuggestions(db, character);
-      socket.emit('suggestions', suggestions);
+      //let suggestions = await generateActionSuggestions(db, character);
+      //socket.emit('suggestions', suggestions);
     });
 
     socket.on('set-rate', (rate) => {
@@ -778,10 +790,10 @@ initializeDatabase().then((db) => {
       }
     });
 
-
     socket.on('disconnect', () => {
       console.log('user disconnected');
       removeSocket(socket);
+      clearInterval(suggestionsInterval);
     });
   });
 
@@ -850,7 +862,7 @@ async function gameStep(db) {
     }
   }
 
-  await promptOnce(db);
+  //await promptOnce(db);
 }
 
 async function promptOnce(db) {
@@ -864,10 +876,14 @@ async function promptOnce(db) {
   }
 
   let suggestions = await generateActionSuggestions(db, character.name);
-
+  let inRoom = await db.all(
+    `SELECT name FROM characters WHERE room = ?;`,
+    [character.room]
+  );
+  console.log(inRoom);
   let history = await recentMessages(db, character, 20);
 
-  let result = await promptBot(character, suggestions, history);
+  let result = await promptBot(character, suggestions, inRoom, history);
 
   if (result !== undefined && result !== '') {
     await send(db, {
