@@ -39,6 +39,13 @@ async function initializeDatabase() {
       name TEXT NOT NULL,
       room TEXT NOT NULL`);
 
+  await makeTable('rooms', `
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT NOT NULL`);
+
+  await db.run(`INSERT INTO rooms (name, description) VALUES ('origin', 'The origin of all things.');`);
+
   return db;
 }
 
@@ -73,14 +80,17 @@ async function process_actions(db, message) {
     return;
   }
 
-  let character = { name: message.character };
+  let character = { name: message.character, room: message.room };
 
   for (const action of actions) {
-    console.log(action);
-    const action_handler = action_handlers[action.name];
-    if (action_handler) {
-      await action_handler(db, character, action);
-    }
+    await execute_action(db, character, action);
+  }
+}
+
+async function execute_action(db, character, action) {
+  const action_handler = action_handlers[action.name];
+  if (action_handler) {
+    await action_handler(db, character, action);
   }
 }
 
@@ -105,6 +115,20 @@ const action_handlers = {
   async go(db, character, action) {
     console.log('go', action.text, character.name);
     const room = action.text;
+    let room_exists = await db.get(
+      `SELECT name FROM rooms WHERE name = ?;`,
+      [room]
+    ).then((row) => row !== undefined);
+
+    if (!room_exists) {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `But ${character.name} couldn't go to the ${room} because it didn't exist.`,
+      });
+      return;
+    }
+
     await db.run(
       `UPDATE characters SET room = ? WHERE name = ?;`,
       [room, character.name]
@@ -115,6 +139,37 @@ const action_handlers = {
       entry.socket.join(room);
       entry.socket.emit('room', room);
     });
+  },
+
+  async create(db, character, action) {
+    console.log('create', action.text, character.name);
+    const room = action.text;
+    let room_exists = await db.get(
+      `SELECT name FROM rooms WHERE name = ?;`,
+      [room]
+    ).then((row) => row !== undefined);
+
+    if (room_exists) {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `But ${character.name} couldn't create the ${room} because it already existed.`,
+      });
+      return;
+    }
+
+    await db.run(
+      `INSERT INTO rooms (name, description) VALUES (?, ?);`,
+      [room, 'A new room.']
+    );
+
+    await send(db, {
+      room: character.room,
+      character: 'Narrator',
+      text: `${character.name} created the ${room}.`,
+    });
+
+    await execute_action(db, character, { name: 'go', text: room });
   }
 };
 
