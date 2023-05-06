@@ -6,7 +6,7 @@ const sqlite3 = require('sqlite3').verbose();
 const sqlite = require('sqlite');
 const dbFile = './world.db';
 const RomanNumerals = require('roman-numerals');
-const { promptBot } = require('./prompt');
+const { promptBot, punchUpNarration, describePlace } = require('./prompt');
 const { listNames } = require('./names');
 
 let gameRate = 10000;
@@ -72,14 +72,49 @@ async function initializeDatabase() {
     `SELECT name FROM rooms WHERE name = 'origin';`
   ).then((row) => row !== undefined);
   if (!originExists) {
-    await db.run(`INSERT INTO rooms (name, description, shards) VALUES ('origin', 'The origin of all things.', 0);`);
+    await db.run(`INSERT INTO rooms (name, description, shards) VALUES ('origin', 'The origin void. Infinite, empty black space.', 0);`);
 
-    await db.run(`INSERT INTO rooms (name, description, shards) VALUES ('forest', 'A beautiful enchanted forest.', 0);`);
+    /*
+    await db.run(`INSERT INTO rooms (name, description, shards) VALUES ('forest', 'A beautiful, enchanted forest.', 0);`);
 
-    await db.run(`INSERT INTO rooms (name, description, shards) VALUES ('caves', 'Spooky caves.', 0);`);
+    await db.run(`INSERT INTO rooms (name, description, shards) VALUES ('caves', 'Dark, spooky caves.', 0);`);
+    */
   }
 
   return db;
+}
+
+async function punchUp(db, message) {
+  let inRoom = await db.all(
+    'SELECT * FROM characters WHERE room = ? and hp > 0;',
+    [message.room]
+  );
+
+  if (inRoom.length === 0) {
+    return message.text;
+  }
+
+  // determine if there are any users in the room
+  if (!inRoom.some((character) => character.role === 'user')) {
+    return message.text;
+  }
+
+  let room = await db.get(
+    `SELECT * FROM rooms WHERE name = ?;`,
+    [message.room]
+  );
+
+  let history = await db.all(
+    'SELECT * FROM messages WHERE room = ? ORDER BY timestamp DESC LIMIT 10;',
+    [message.room]
+  );
+
+  let result = await punchUpNarration(message.text, history, room, inRoom);
+  if (result && result !== '') {
+    return result;
+  } else {
+    return message.text;
+  }
 }
 
 async function send(db, messageData) {
@@ -89,6 +124,10 @@ async function send(db, messageData) {
   };
 
   console.log(`${message.character} (${message.room}): ${message.text}`);
+
+  if (message.character === 'Narrator') {
+    message.text = await punchUp(db, message);
+  }
 
   message.id = await db.run(
     `INSERT INTO messages (room, character, text, timestamp) VALUES (?, ?, ?, ?);`,
@@ -227,7 +266,7 @@ let actionHandlers = {
     await send(db, {
       room: room,
       character: 'Narrator',
-      text: `${character.name} appeared in the ${room}.`,
+      text: `${character.name} traveled to the ${room}.`,
     });
 
     await send(db, {
@@ -267,16 +306,23 @@ let actionHandlers = {
       return;
     }
 
-    await db.run(
-      `INSERT INTO rooms (name, description, shards) VALUES (?, ?, ?);`,
-      [room, 'A new room.', 0]
-    );
-
     await send(db, {
       room: character.room,
       character: 'Narrator',
       text: `${character.name} used a shard and created the ${room}.`,
     });
+
+    let history = await db.all(
+      `SELECT * FROM messages WHERE room = ? ORDER BY id DESC LIMIT 10;`,
+      [character.room]
+    );
+    let description = await describePlace(character, history, room);
+
+    await db.run(
+      `INSERT INTO rooms (name, description, shards) VALUES (?, ?, ?);`,
+      [room, description, 0]
+    );
+
 
     await executeAction(db, character, { name: 'go', text: room });
   },
@@ -602,7 +648,7 @@ actionHandlers['return'] = async function(db, character, action) {
   let message = {
     room: summonerRoom,
     character: 'Narrator',
-    text: `${character.name} returned to ${character.summoner} and restored ${shards} shards.`,
+    text: `${character.name} returned to ${character.summoner} and restored ${shards} shards. ${character.name} disappeared.`,
   };
   await send(db, message);
 
@@ -745,7 +791,7 @@ initializeDatabase().then((db) => {
   io.on('connection', async (socket) => {
     console.log('a user connected');
 
-    const name = 'Being';
+    const name = 'Arkim';
 
     let character = await db.get(
       `SELECT * FROM characters WHERE name = ?;`,
