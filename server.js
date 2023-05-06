@@ -167,7 +167,7 @@ async function spendShard(db, character) {
   return true;
 }
 
-const actionHandlers = {
+let actionHandlers = {
   async go(db, character, action) {
     console.log('go', character, action);
     const room = action.text;
@@ -525,6 +525,41 @@ const actionHandlers = {
     });
   }
 };
+
+actionHandlers['return'] = async function(db, character, action) {
+  let shards = character.shards + 1;
+
+  let summonerRoom = await db.get(
+    `SELECT room FROM characters WHERE name = ?;`,
+    [character.summoner]
+  ).then((row) => row.room);
+
+  await db.run(
+    `UPDATE characters SET shards = shards + ? WHERE name = ?;`,
+    [shards, character.summoner]
+  );
+
+  socketTable.filter((entry) => entry.character === character.summoner).forEach((entry) => {
+    entry.socket.emit('shards', shards);
+  });
+
+  let message = {
+    room: summonerRoom,
+    character: 'Narrator',
+    text: `${character.name} returned to ${character.summoner} and restored ${shards} shards.`,
+  };
+  await send(db, message);
+
+  if (character.room !== summonerRoom) {
+    message.room = character.room;
+    await send(db, message);
+  }
+
+  await db.run(
+    `DELETE FROM characters WHERE name = ?;`,
+    [character.name]
+  );
+};
 // END actionHandlers
 
 const actionSuggestions = [
@@ -551,6 +586,14 @@ const actionSuggestions = [
 
   async function searchSuggestions(db, character) {
     return ['%search%'];
+  },
+
+  async function returnSuggestions(db, character) {
+    if (character.role === 'bot') {
+      return ['%return%'];
+    } else {
+      return [];
+    }
   },
 
   async function strikeHealSuggestions(db, character) {
@@ -628,7 +671,7 @@ initializeDatabase().then((db) => {
 
       await db.run(
         `INSERT INTO scripts (character, name, script) VALUES (?, ?, ?);`,
-        [name, 'Odel', 'I am Odel. I am always loyal to my summoner. I search for shards. When I find nothing, I go to a different place. When I find a shard, I return.']
+        [name, 'Odel', 'I am Odel. I am always loyal to my summoner. I search for shards. When I find nothing, I go to a different place. When I have 5 shards, I return.']
       );
 
       character = await db.get(
