@@ -245,6 +245,11 @@
       margin-top: 0.5rem;
     }
 
+    #suggestions.cooldown {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     .suggestion {
       margin: 0.25rem 0;
       padding: 0 0.5rem 0rem 0.5rem;
@@ -448,6 +453,17 @@
       document.getElementById('hp').innerText = hp;
     });
 
+    let onCooldown = false;
+    function startCooldown() {
+      const suggestionsElement = document.getElementById('suggestions');
+      suggestionsElement.classList.add('cooldown');
+      onCooldown = true;
+      setTimeout(() => {
+        suggestionsElement.classList.remove('cooldown');
+        onCooldown = false;
+      }, 1000);
+    }
+
     let lastSuggestions = [];
     socket.on('suggestions', function(suggestions) {
       if (lastSuggestions.length === suggestions.length) {
@@ -472,7 +488,11 @@
         suggestionElement.innerText = suggestion;
         suggestionElement.classList.add('suggestion');
         suggestionElement.addEventListener('click', () => {
+          if (onCooldown) {
+            return;
+          }
           socket.emit('message', {text: suggestion});
+          startCooldown();
         });
         suggestionsElement.appendChild(suggestionElement);
       });
