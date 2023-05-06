@@ -148,7 +148,9 @@ async function send(db, messageData) {
 
   io.to(message.room).emit('message', message);
 
-  await processActions(db, message);
+  if (message.character !== 'Narrator') {
+    await processActions(db, message);
+  }
 }
 
 async function processActions(db, message) {
