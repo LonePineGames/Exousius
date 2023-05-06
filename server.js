@@ -465,6 +465,18 @@ let actionHandlers = {
       `INSERT INTO characters (role, name, room, script, summoner, hp, shards) VALUES (?, ?, ?, ?, ?, ?, ?);`,
       ['bot', summonInstance, character.room, script.script, character.name, 10, 0]
     );
+
+    let recentMessages = await db.all(
+      `SELECT * FROM messages WHERE room = ? ORDER BY id DESC LIMIT 10;`,
+      [character.room]
+    );
+
+    recentMessages.forEach(async (message) => {
+      await db.run(
+        `INSERT INTO seen_messages (message_id, character_name) VALUES (?, ?);`,
+        [message.id, summonInstance]
+      );
+    });
   },
 
   async strike(db, character, action) {
@@ -932,7 +944,7 @@ async function getTotalShards(db) {
     // Count the number of characters and sum the shards they hold
     const characterQuery = `
       SELECT COUNT(*) as characterCount, SUM(shards) as characterShards
-      FROM characters`;
+      FROM characters where hp > 0`;
     const characterResult = await db.get(characterQuery);
     const characterTotalShards = characterResult.characterCount + characterResult.characterShards;
 
@@ -988,7 +1000,7 @@ async function promptOnce(db) {
 
   let suggestions = await generateActionSuggestions(db, character.name);
   let inRoom = await db.all(
-    `SELECT name FROM characters WHERE room = ?;`,
+    `SELECT name FROM characters WHERE room = ? and hp > 0;`,
     [character.room]
   );
   console.log(inRoom);
