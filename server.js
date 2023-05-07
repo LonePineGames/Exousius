@@ -637,7 +637,82 @@ let actionHandlers = {
     socketTable.filter((entry) => entry.character === target.name).forEach((entry) => {
       entry.socket.emit('hp', target.hp);
     });
-  }
+  },
+
+  async give(db, character, action) {
+    let params = action.text.split(' ');
+    let number = parseInt(params[params.length - 1]);
+    let targetName = params.slice(0, params.length - 1).join(' ');
+
+    if (character.shards <= 0) {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `But ${character.name} couldn't charge because ${character.name} had no shards.`,
+      });
+      return;
+    }
+
+    let target = await db.get(
+      `SELECT * FROM characters WHERE name = ?;`,
+      [targetName]
+    );
+
+    if (target === undefined) {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `But ${character.name} couldn't give shards to ${targetName} because ${targetName} didn't exist.`,
+      });
+      return;
+    }
+
+    if (target.shards < 0) {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `But ${character.name} couldn't give shards to ${target.name} because ${target.name} had already returned.`,
+      });
+      return;
+    }
+
+    if (target.room !== character.room) {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `But ${character.name} couldn't give shards to ${target.name} because ${target.name} wasn't in the ${character.room}`,
+      });
+      return;
+    }
+
+    await send(db, {
+      room: character.room,
+      character: 'Narrator',
+      text: `${character.name} gave ${target.name} ${number} shards.`,
+    });
+
+    target.shards += number;
+    character.shards -= number;
+
+    await db.run(
+      `UPDATE characters SET shards = ? WHERE id = ?;`,
+      [target.shards, target.id]
+    );
+
+    await db.run(
+      `UPDATE characters SET shards = ? WHERE id = ?;`,
+      [character.shards, character.id]
+    );
+
+    socketTable.forEach((entry) => {
+      if (entry.character === target.name) {
+        entry.socket.emit('shards', target.shards);
+      }
+      if (entry.character === character.name) {
+        entry.socket.emit('shards', character.shards);
+      }
+    }
+  },
 };
 
 actionHandlers['return'] = async function(db, character, action) {
@@ -742,6 +817,25 @@ const actionSuggestions = [
     }
 
     return strike.concat(heal);
+  },
+
+  async function giveSuggestions(db, character) {
+    if (character.shards <= 0) {
+      return [];
+    }
+
+    let shardsToGive = character.role === 'bot' ? character.shards : 1;
+
+    let validCharacters = await db.all(
+      `SELECT * FROM characters WHERE room = ?;`,
+      [character.room]
+    );
+
+    let give = validCharacters
+      .filter((ch) => ch.name !== character.name && ch.hp > 0)
+      .map((ch) => `%give ${ch.name} ${shardsToGive}%`);
+
+    return give;
   },
 ];
 
