@@ -285,17 +285,17 @@ let actionHandlers = {
 
   async create(db, character, action) {
     console.log('create', action.text, character.name);
-    const room = action.text;
+    const roomName = action.text;
     let roomExists = await db.get(
       `SELECT name FROM rooms WHERE name = ?;`,
-      [room]
+      [roomName]
     ).then((row) => row !== undefined);
 
     if (roomExists) {
       await send(db, {
         room: character.room,
         character: 'Narrator',
-        text: `But ${character.name} couldn't create the ${room} because it already existed.`,
+        text: `But ${character.name} couldn't create the ${roomName} because it already existed.`,
       });
       return;
     }
@@ -304,32 +304,56 @@ let actionHandlers = {
       await send(db, {
         room: character.room,
         character: 'Narrator',
-        text: `But ${character.name} couldn't create the ${room} because they don't have any shards.`,
+        text: `But ${character.name} couldn't create the ${roomName} because they don't have any shards.`,
       });
       return;
     }
 
+    let id = await db.run(
+      `INSERT INTO rooms (name, description, image_url, shards) VALUES (?, ?, ?, ?);`,
+      [roomName, '', '', 0]
+    ).then((result) => result.lastID);
+
     await send(db, {
       room: character.room,
       character: 'Narrator',
-      text: `${character.name} used a shard and created the ${room}.`,
+      text: `${character.name} used a shard and created the ${roomName}.`,
     });
 
     let history = await db.all(
       `SELECT * FROM messages WHERE room = ? ORDER BY id DESC LIMIT 10;`,
       [character.room]
     );
-    let description = await describePlace(character, history, room);
+    let description = await describePlace(character, history, roomName);
+
+    await db.run(
+      `UPDATE rooms SET description = ? WHERE id = ?;`,
+      [description, id]
+    );
+
+    await send(db, {
+      room: roomName,
+      character: character.name,
+      text: `%go ${roomName}%`,
+    });
 
     let picture = await createPicture(description);
 
     await db.run(
-      `INSERT INTO rooms (name, description, image_url, shards) VALUES (?, ?, ?, ?);`,
-      [room, description, picture, 0]
+      `UPDATE rooms SET image_url = ? WHERE id = ?;`,
+      [picture, id]
     );
 
+    socketTable.forEach(async (entry) => {
+      let characterRoom = await db.get(
+        `SELECT room FROM characters WHERE name = ?;`,
+        [entry.character]
+      ).then((row) => row.room);
 
-    await executeAction(db, character, { name: 'go', text: room });
+      if (characterRoom === roomName) {
+        entry.socket.emit('background-image', picture);
+      }
+    });
   },
 
   async search(db, character, action) {
@@ -456,14 +480,6 @@ let actionHandlers = {
       }
     }
 
-    await send(db, {
-      room: character.room,
-      character: 'Narrator',
-      text: `${character.name} used a shard and summoned ${summonInstance}.`,
-    });
-
-    console.log(script);
-
     await db.run(
       `INSERT INTO characters (role, name, room, script, summoner, hp, shards) VALUES (?, ?, ?, ?, ?, ?, ?);`,
       ['bot', summonInstance, character.room, script.script, character.name, 10, 0]
@@ -479,6 +495,12 @@ let actionHandlers = {
         `INSERT INTO seen_messages (message_id, character_name) VALUES (?, ?);`,
         [message.id, summonInstance]
       );
+    });
+
+    await send(db, {
+      room: character.room,
+      character: 'Narrator',
+      text: `${character.name} used a shard and summoned ${summonInstance}.`,
     });
   },
 
@@ -644,6 +666,15 @@ let actionHandlers = {
     let number = parseInt(params[params.length - 1]);
     let targetName = params.slice(0, params.length - 1).join(' ');
 
+    if (targetName == '' || targetName == character.name) {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `${character.name} switched ${number} shards between their hands.`,
+      });
+      return;
+    }
+
     if (character.shards <= 0) {
       await send(db, {
         room: character.room,
@@ -711,11 +742,15 @@ let actionHandlers = {
       if (entry.character === character.name) {
         entry.socket.emit('shards', character.shards);
       }
-    }
+    });
   },
 };
 
 actionHandlers['return'] = async function(db, character, action) {
+  if (character.role === 'user') {
+    return;
+  }
+
   let shards = character.shards + 1;
 
   let summonerRoom = await db.get(
@@ -774,9 +809,11 @@ const actionSuggestions = [
   },
 
   async function summonSuggestions(db, character) {
+    /*
     if (character.role === 'bot') {
       return [];
     }
+    */
 
     let scripts = await db.all(
       `SELECT name FROM scripts WHERE character = ?;`,
@@ -869,7 +906,7 @@ async function reportRoom(db, character) {
 
   socketTable.filter((entry) => entry.character === character.name).forEach((entry) => {
     entry.socket.emit('message', {
-      timestamp: Date.now(),
+      timestamp: new Date().toISOString(),
       room: character.room,
       character: 'Narrator',
       text: `${room.description} In the ${room.name} was ${listNames(characters)}.`,
@@ -922,19 +959,23 @@ initializeDatabase().then((db) => {
 
       await db.run(
         `INSERT INTO scripts (character, name, script) VALUES (?, ?, ?);`,
-        [name, 'Ekel', 'I am Ekel. I am always loyal to my summoner. I stay with my summoner, going wherever my summoner goes, and I strike my summoner\'s enemies. If I do not have any instructions from my summoner, I will remain silent.']
+        [name, 'Ekel', 'I am Ekel. I am always loyal to my summoner. I stay with my summoner, going wherever my summoner goes, and I %strike% my summoner\'s enemies. If my master asks me to %return% I will do so immediately.']
       );
 
       await db.run(
         `INSERT INTO scripts (character, name, script) VALUES (?, ?, ?);`,
-        [name, 'Odel', 'I am Odel. I am always loyal to my summoner. I search for shards. When I find shards, I keep searching in the same place. When I find nothing, I go to a different place. When I have 5 shards, I return.']
+        [name, 'Odel', 'I am Odel. I am always loyal to my summoner. I %search% for shards. When I find shards, I keep searching in the same place. When I find nothing, I %go% to a different place. When I have 5 shards, I return.']
       );
 
       await db.run(
         `INSERT INTO scripts (character, name, script) VALUES (?, ?, ?);`,
-        [name, 'Mort', 'I am Mort. I despise my summoner. I will strike my summoner until death.']
+        [name, 'Mort', 'I am Mort. I despise my summoner. I will %strike% my summoner until death. If my summoner is not nearby, I will %search% for more shards to make myself more powerful.']
       );
 
+      await db.run(
+        `INSERT INTO scripts (character, name, script) VALUES (?, ?, ?);`,
+        [name, 'Temusea', 'I am Temusea. I can create beautiful lands and locations using a command such as %create ancient forest%. But before I can create wonderful new locations for the game, I must acquire shards, either from my summoner or by %search%. Once I have shards, I can start creating and worldbuilding!']
+      );
 
       character = await db.get(
         `SELECT * FROM characters WHERE name = ?;`,
@@ -1098,13 +1139,27 @@ async function promptOnce(db) {
     return;
   }
 
+  let history = await recentMessages(db, character, 40);
+
+  // If the most recent message was just that character talking, make them shut up for one minute.
+  if (history.length > 0) {
+    let recentMost = history[history.length - 1];
+    if (recentMost.character === character.name) {
+      let timestamp = new Date(recentMost.timestamp);
+      let timeSince = Date.now() - timestamp;
+      console.log(timeSince, recentMost);
+      if (timeSince < 1000 * 60) {
+        return;
+      }
+    }
+  }
+
   let suggestions = await generateActionSuggestions(db, character.name);
   let inRoom = await db.all(
     `SELECT name FROM characters WHERE room = ? and hp > 0;`,
     [character.room]
   );
   console.log(inRoom);
-  let history = await recentMessages(db, character, 20);
 
   let result = await promptBot(character, suggestions, inRoom, history);
 

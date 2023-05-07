@@ -23,7 +23,7 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 
 async function promptBot(character, suggestions, inRoom, history) {
-  console.log('promptBot', character, inRoom);
+  //console.log('promptBot', character, inRoom);
   let inRoomText = listNames(inRoom.map((p) => p.name));
   const prompt = 
 
@@ -47,7 +47,7 @@ ${character.name}: Master, I must go! %go forest%
 ### Response
 ${character.name}: `;
 
-  console.log(prompt);
+  //console.log(prompt);
 
   try {
     const completion = await openai.createChatCompletion({
@@ -57,7 +57,7 @@ ${character.name}: `;
       messages: [{role: "user", content: prompt}],
     });
     const message = completion.data.choices[0].message.content;
-    console.log('message', message);
+    //console.log('message', message);
     const lines = message.split("\n")
     const firstLine = lines[0].trim();
     return firstLine;
@@ -69,7 +69,7 @@ ${character.name}: `;
 }
 
 async function punchUpNarration(narration, history, room, inRoom) {
-  console.log('punchUpNarration', narration, room, inRoom);
+  //console.log('punchUpNarration', narration, room, inRoom);
   let inRoomText = listNames(inRoom.map((p) => p.name));
   const prompt =
 `This is a text-based role playing game set in a medieval fantasy world. I am the narrator.
@@ -87,7 +87,7 @@ Narrator: ${narration}
 
 ### Response
 Narrator: `;
-  console.log(prompt);
+  //console.log(prompt);
 
   try {
     const completion = await openai.createChatCompletion({
@@ -97,7 +97,7 @@ Narrator: `;
       messages: [{role: "user", content: prompt}],
     });
     const message = completion.data.choices[0].message.content;
-    console.log('message', message);
+    //console.log('message', message);
     const lines = message.split("\n")
     const firstLine = lines[0].trim();
     return firstLine;
@@ -109,7 +109,7 @@ Narrator: `;
 }
 
 async function describePlace(character, history, roomName) {
-  console.log('describePlace', roomName);
+  //console.log('describePlace', roomName);
   let prompt =
 `This is a text-based role playing game set in a medieval fantasy world.
 
@@ -117,15 +117,15 @@ async function describePlace(character, history, roomName) {
 ${history.map((h) => `${h.character}: ${h.text}`).join('\n')}
 
 ### Instructions
-Describe the ${roomName}, which ${character.name} just created. Keep the response brief, under 20 words. Add drama and enticing language. Use past tense. Only describe the ${roomName}. Do not describe ${character.name} or any other characters.
+Describe the ${roomName}, which ${character.name} just created. Keep the response brief, under 40 words. Add drama and enticing language. Use past tense. Only describe the ${roomName}. Do not describe ${character.name} or any other characters.
 
 ### Example
-The tavern was a warm and inviting space, with a roaring fire and lively chatter.
+The tavern was a warm and inviting space, with a roaring fire and lively chatter. The cramped room was filled with low murmurs and the occasional clink of glasses.
 
 ### Response
 `;
 
-  console.log(prompt);
+  //console.log(prompt);
 
   try {
     const completion = await openai.createChatCompletion({
@@ -135,7 +135,7 @@ The tavern was a warm and inviting space, with a roaring fire and lively chatter
       messages: [{role: "user", content: prompt}],
     });
     const message = completion.data.choices[0].message.content;
-    console.log('message', message);
+    //console.log('message', message);
     const lines = message.split("\n")
     const firstLine = lines[0].trim();
     return firstLine;
