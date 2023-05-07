@@ -1,4 +1,5 @@
 /node_modules/
 /openai.json
 /*.db
+/public/backgrounds/*.jpg
 
