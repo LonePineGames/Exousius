@@ -344,6 +344,8 @@ let actionHandlers = {
       [picture, id]
     );
 
+    console.log('picture', picture);
+
     socketTable.forEach(async (entry) => {
       let characterRoom = await db.get(
         `SELECT room FROM characters WHERE name = ?;`,
@@ -809,6 +811,10 @@ const actionSuggestions = [
   },
 
   async function summonSuggestions(db, character) {
+    if (character.shards <= 0) {
+      return [];
+    }
+
     /*
     if (character.role === 'bot') {
       return [];
@@ -881,6 +887,10 @@ async function generateActionSuggestions(db, characterName) {
     `SELECT * FROM characters WHERE name = ?;`,
     [characterName]
   );
+
+  if (!character) {
+    return [];
+  }
 
   let promises = actionSuggestions.map(async (func) => {
     return await func(db, character);
