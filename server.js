@@ -756,6 +756,44 @@ let actionHandlers = {
       }
     });
   },
+
+  async scry(db, character, action) {
+    if (!spendShard(db, character)) {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `But ${character.name} couldn't scry because ${character.name} had no shards.`,
+      });
+      return;
+    }
+
+
+    // Add every message in this room to seen_messages, if it's not already there.
+
+    let messages = await db.all(
+      `SELECT * FROM messages WHERE room = ?;`,
+      [character.room]
+    );
+
+    messages.forEach(async (message) => {
+      await db.run(
+        'INSERT INTO seen_messages (message_id, character_name) SELECT ?, ? WHERE NOT EXISTS (SELECT 1 FROM seen_messages WHERE message_id = ? AND character_name = ?);',
+        [message.id, character.name, message.id, character.name]
+      );
+    });
+
+    await send(db, {
+      room: character.room,
+      character: 'Narrator',
+      text: `${character.name} sacrificed a shard to look into the past. ${character.name} can now see everything that has ever happened in the ${character.room}.`,
+    });
+
+    socketTable.filter((entry) => entry.character === character.name).forEach(async (entry) => {
+      entry.socket.emit('reset');
+      let seenMessages = await recentMessages(db, character, 100);
+      entry.socket.emit('previous messages', seenMessages);
+    });
+  },
 };
 
 actionHandlers['return'] = async function(db, character, action) {
@@ -835,7 +873,9 @@ const actionSuggestions = [
       `SELECT name FROM scripts WHERE character = ?;`,
       [character.name]
     );
-    return scripts.map((script) => `%summon ${script.name}%`);
+    let result = scripts.map((script) => `%summon ${script.name}%`);
+    result.push('%scry%');
+    return result;
   },
 
   async function searchSuggestions(db, character) {
