@@ -6,7 +6,7 @@ const sqlite3 = require('sqlite3').verbose();
 const sqlite = require('sqlite');
 const dbFile = './world.db';
 const RomanNumerals = require('roman-numerals');
-const { promptBot, punchUpNarration, describePlace } = require('./prompt');
+const { promptBot, punchUpNarration, describePlace, createPicture } = require('./prompt');
 const { listNames } = require('./names');
 
 let gameRate = 10000;
@@ -60,6 +60,7 @@ async function initializeDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       description TEXT NOT NULL,
+      image_url TEXT,
       shards INTEGER NOT NULL`);
 
   await makeTable('scripts', `
@@ -72,7 +73,7 @@ async function initializeDatabase() {
     `SELECT name FROM rooms WHERE name = 'origin';`
   ).then((row) => row !== undefined);
   if (!originExists) {
-    await db.run(`INSERT INTO rooms (name, description, shards) VALUES ('origin', 'The origin void. Infinite, empty black space.', 0);`);
+    await db.run(`INSERT INTO rooms (name, description, image_url, shards) VALUES ('origin', 'The origin void. Infinite, empty black space.', '', 0);`);
 
     /*
     await db.run(`INSERT INTO rooms (name, description, shards) VALUES ('forest', 'A beautiful, enchanted forest.', 0);`);
@@ -320,9 +321,11 @@ let actionHandlers = {
     );
     let description = await describePlace(character, history, room);
 
+    let picture = await createPicture(description);
+
     await db.run(
-      `INSERT INTO rooms (name, description, shards) VALUES (?, ?, ?);`,
-      [room, description, 0]
+      `INSERT INTO rooms (name, description, image_url, shards) VALUES (?, ?, ?, ?);`,
+      [room, description, picture, 0]
     );
 
 
@@ -777,6 +780,9 @@ async function reportRoom(db, character) {
       character: 'Narrator',
       text: `${room.description} In the ${room.name} was ${listNames(characters)}.`,
     });
+
+    console.log("reportRoom url", room.image_url);
+    entry.socket.emit('background-image', room.image_url);
   });
 }
 

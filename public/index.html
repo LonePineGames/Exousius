@@ -44,6 +44,8 @@
       max-width: 600px;
       margin: 0 auto;
       background-color: var(--chat-bg);
+      background-size: cover;
+      background-position: center;
       display: flex;
       flex-direction: column;
       padding: 0.5rem;
@@ -384,7 +386,6 @@
     });
 
     function messageReceived(message) {
-      console.log(message);
       const messages = document.getElementById('messages');
 
       // Creating div for character's name
@@ -443,6 +444,18 @@
 
     socket.on('room', function(room) {
       document.getElementById('room').innerText = room;
+    });
+
+    socket.on('background-image', function(img) {
+      let chatElement = document.getElementById('chat-container');
+
+      chatElement.style.background = `linear-gradient(180deg, rgba(0, 0, 0, 1.0), rgba(0, 0, 0, 0.75)), url(${img})`;
+      chatElement.style.backgroundSize = 'cover';
+      chatElement.style.backgroundPosition = 'center';
+
+      document.body.style.background = `url(${img})`;
+      document.body.style.backgroundSize = 'cover';
+      document.body.style.backgroundPosition = 'center';
     });
 
     socket.on('shards', function(shards) {

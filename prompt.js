@@ -1,4 +1,6 @@
 const { listNames } = require('./names');
+const https = require('https');
+const fs = require('fs');
 
 // Set up OpenAI key
 let apiKey = '';
@@ -79,7 +81,7 @@ ${history.map((h) => `${h.character}: ${h.text}`).join('\n')}
 ${room.description} Creatures in the ${room.name}: ${inRoomText}.
 
 ### Instructions
-Improve the following narration. Keep the response brief, under 20 words. Preserve all details, especially numbers. Fix any grammatical mistakes. Add drama and enticing language.
+Improve the following narration. Keep the response brief, under 20 words. Preserve all details, especially numbers. Fix any grammatical mistakes. Add drama and enticing language. Don't include action commands (e.g. %go forest%). Use past tense.
 
 Narrator: ${narration}
 
@@ -144,5 +146,36 @@ The tavern was a warm and inviting space, with a roaring fire and lively chatter
   return '';
 }
 
-module.exports = { promptBot, punchUpNarration, describePlace };
+async function createPicture(description) {
+  const response = await openai.createImage({
+    prompt: `A beautiful, highly detailed oil painting in the style of realism. Circa 1802. ${description}`,
+    n: 1,
+    size: "1024x1024",
+  });
+  const result = response.data.data[0].url;
+
+  let filename = '';
+  while (true) {
+    filename = `/backgrounds/image-${Math.floor(Math.random() * 100000)}.jpg`;
+    if (!fs.existsSync('public' + filename)) {
+      break;
+    }
+  }
+
+  // Download the image
+  await new Promise((resolve, reject) => {
+    const file = fs.createWriteStream('public' + filename);
+    console.log('file', filename);
+    const request = https.get(result, function(response) {
+      response.pipe(file);
+    });
+    file.on('finish', function() {
+      resolve();
+    });
+  });
+
+  return filename;
+}
+
+module.exports = { promptBot, punchUpNarration, describePlace, createPicture };
 
