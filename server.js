@@ -11,6 +11,7 @@ const { listNames } = require('./names');
 
 let gameRate = 10000;
 let socketTable = [];
+const maxShards = 100;
 
 app.use(express.static('public'));
 
@@ -228,6 +229,10 @@ async function spendShard(db, character) {
 let actionHandlers = {
   async go(db, character, action) {
     const room = action.text;
+    if (room === '') {
+      return;
+    }
+
     const previousRoom = character.room;
     if (room === previousRoom) {
       await send(db, {
@@ -309,9 +314,13 @@ let actionHandlers = {
       return;
     }
 
+    let totalShards = await getTotalShards(db);
+    let initShards = Math.max(0, Math.min(maxShards - totalShards, 5));
+    console.log("initShards", initShards);
+
     let id = await db.run(
       `INSERT INTO rooms (name, description, image_url, shards) VALUES (?, ?, ?, ?);`,
-      [roomName, '', '', 0]
+      [roomName, '', '', initShards]
     ).then((result) => result.lastID);
 
     await send(db, {
@@ -557,9 +566,10 @@ let actionHandlers = {
       }
     }
 
-    let message = `${character.name} struck ${target.name} for ${damage} damage.`;
+    let message = `${character.name} struck ${target.name} for ${damage} damage. ${target.name} now has ${target.hp} HP.`;
     if (sacrifice > 0) {
-      message += ` ${target.name} sacrificed ${sacrifice} shards to stay alive.`;
+      const inVain = target.hp <= 0 ? ', but it was not enough' : '';
+      message += ` ${target.name} sacrificed ${sacrifice} shards to stay alive${inVain}.`;
     }
     await send(db, {
       room: character.room,
@@ -979,7 +989,7 @@ initializeDatabase().then((db) => {
 
       await db.run(
         `INSERT INTO scripts (character, name, script) VALUES (?, ?, ?);`,
-        [name, 'Mort', 'I am Mort. I despise my summoner. I will %strike% my summoner until death. If my summoner is not nearby, I will %search% for more shards to make myself more powerful.']
+        [name, 'Mort', 'I am Mort. I despise my summoner. I will %strike% my summoner until death. If my summoner is not nearby, I will %search% for more shards to make myself more powerful. I can also %summon% other demons. Odel is good at collecting shards quickly. Another Mort would be a vital ally.']
       );
 
       await db.run(
@@ -1116,23 +1126,25 @@ async function getTotalShards(db) {
 }
 
 async function gameStep(db) {
-  // compute the number of shards in play
-  let shardCount = await getTotalShards(db);
-  console.log(`There are ${shardCount} shards in play.`);
+  if (Math.random() < 0.1) {
+    // compute the number of shards in play
+    let shardCount = await getTotalShards(db);
+    console.log(`There are ${shardCount} shards in play.`);
 
-  if (shardCount < 100) {
-    //randomly select a room
-    let room = await db.get(
-      `SELECT * FROM rooms ORDER BY RANDOM() LIMIT 1;`
-    );
-
-    if (room !== undefined) {
-      await db.run(
-        `UPDATE rooms SET shards = shards + 1 WHERE id = ?;`,
-        [room.id]
+    if (shardCount < maxShards) {
+      //randomly select a room
+      let room = await db.get(
+        `SELECT * FROM rooms ORDER BY RANDOM() LIMIT 1;`
       );
 
-      console.log(`A shard appeared in the ${room.name}.`);
+      if (room !== undefined) {
+        await db.run(
+          `UPDATE rooms SET shards = shards + 1 WHERE id = ?;`,
+          [room.id]
+        );
+
+        console.log(`A shard appeared in the ${room.name}.`);
+      }
     }
   }
 
@@ -1169,7 +1181,6 @@ async function promptOnce(db) {
     `SELECT name FROM characters WHERE room = ? and hp > 0;`,
     [character.room]
   );
-  console.log(inRoom);
 
   let result = await promptBot(character, suggestions, inRoom, history);
 
