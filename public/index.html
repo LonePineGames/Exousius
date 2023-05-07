@@ -20,6 +20,7 @@
 
       --frame-bg: #333;
       --chat-bg: #222;
+      --script-bg: #bf8c40;
       --vh: 1vh;
     }
 
@@ -129,7 +130,7 @@
       to   { opacity: 1; }
     }
 
-    #player-name, .name {
+    #player-name, .message .name {
       margin: 0rem 0.25rem 0 -0.75rem;
       padding: 0 0.5rem 0rem 0.5rem;
 
@@ -195,7 +196,8 @@
     #room {
       position: absolute;
       top: 6rem;
-      left: 5rem;
+      left: 3rem;
+      z-index: 1;
       width: fit-content;
       padding: 0.5rem 1rem;
       border-radius: 0 0 1rem 1rem;
@@ -211,8 +213,9 @@
 
     #hp, #shards, #scriptsButton {
       position: absolute;
-      width: 2rem;
-      height: 2rem;
+      /*width: 2rem;
+      height: 2rem;*/
+      z-index: 1;
 
       border-radius: 0 0 100% 100%;
       font-size: 2rem;
@@ -229,18 +232,22 @@
 
     #hp {
       top: 6rem;
-      right: 4rem;
+      right: 3rem;
       color: var(--accent-color);
     }
 
     #shards {
-      top: 10rem;
+      top: 9rem;
       right: 2rem;
     }
 
     #scriptsButton {
-      top: 10rem;
+      top: 9rem;
       left: 2rem;
+    }
+
+    #scriptsButton:hover {
+      background-color: var(--accent-color);
     }
 
     #suggestions {
@@ -264,6 +271,56 @@
       border: none;
     }
 
+    #scriptsPanel {
+      display: none;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;
+      background-color: rgba(0,0,0,0.5);
+    }
+
+    #scriptsContainer {
+      display: flex;
+      max-width: 24rem;
+      margin: 10rem auto;
+      flex-direction: column;
+      padding: 1rem;
+    }
+
+    button.script {
+      display: flex;
+      flex-direction: column;
+      font-family: 'Cardo', serif;
+      border: none;
+      line-height: 1.25rem;
+      font-size: 1rem;
+      min-height: 24rem;
+      background-color: var(--script-bg);
+      border-radius: 0.5rem;
+      color: black;
+      margin: 2rem 0;
+      padding: 4rem;
+      box-shadow: 1rem 1rem 2rem black,
+        -0.25rem -0.25rem 0.5rem black inset;
+    }
+
+    .script .name {
+      text-transform: capitalize;
+      text-align: center;
+      font-weight: bold;
+      font-size: 2rem;
+      height: 4rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid black;
+    }
+
+    .script .text {
+      text-align: justify;
+      font-size: 1rem;
+      line-height: 1.25rem;
+    }
+
     /* Scrollbar Styling */
     ::-webkit-scrollbar {
       width: 0.5rem;
@@ -273,13 +330,26 @@
       background-color: var(--accent-color);
       border-radius: 0.25rem;
     }
+
+    html body button {
+      font-family: "Cardo", serif;
+      font-size: 1rem;
+      outline: none;
+      border: none;
+      cursor: pointer;
+    }
+
+    html body button:hover {
+      box-shadow: 0 0 0.5rem #777;
+    }
+
   </style>
 </head>
 <body>
 
   <div id="chat-container">
     <div id="room">Origin</div>
-    <div id="scriptsButton"><i class="fas fa-scroll"></i></div>
+    <button id="scriptsButton"><i class="fas fa-scroll"></i></button>
     <div id="hp">10</div>
     <div id="shards">0</div>
     <div id="message-container">
@@ -305,6 +375,10 @@
     </div>
 
     <div id="suggestions"></div>
+
+    <div id="scriptsPanel">
+      <div id="scriptsContainer"></div>
+    </div>
 
   </div>
   <script src="/socket.io/socket.io.js"></script>
@@ -466,6 +540,26 @@
       document.getElementById('hp').innerText = hp;
     });
 
+    socket.on('scripts', function(scripts) {
+      const scriptsElement = document.getElementById('scriptsContainer');
+      scriptsElement.innerHTML = '';
+      scripts.forEach((script) => {
+        const scriptElement = document.createElement('button');
+        scriptElement.classList.add('script');
+        scriptsElement.appendChild(scriptElement);
+
+        const scriptNameElement = document.createElement('div');
+        scriptNameElement.innerText = script.name;
+        scriptNameElement.classList.add('name');
+        scriptElement.appendChild(scriptNameElement);
+
+        const scriptTextElement = document.createElement('div');
+        scriptTextElement.innerText = script.script;
+        scriptTextElement.classList.add('text');
+        scriptElement.appendChild(scriptTextElement);
+      });
+    });
+
     let onCooldown = false;
     function startCooldown() {
       const suggestionsElement = document.getElementById('suggestions');
@@ -524,6 +618,15 @@
         muteElement.innerHTML = '<i class="fas fa-volume-up"></i>';
       }
       playSound("player");
+    });
+
+    document.getElementById('scriptsButton').addEventListener('click', () => {
+      let scriptsElement = document.getElementById('scriptsPanel');
+      if (scriptsElement.style.display === 'none') {
+        scriptsElement.style.display = 'block';
+      } else {
+        scriptsElement.style.display = 'none';
+      }
     });
 
     const rateButtons = [

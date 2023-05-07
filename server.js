@@ -272,15 +272,15 @@ let actionHandlers = {
     });
 
     await send(db, {
-      room: room,
-      character: 'Narrator',
-      text: `${character.name} traveled to the ${room}.`,
-    });
-
-    await send(db, {
       room: previousRoom,
       character: 'Narrator',
       text: `${character.name} left to go to the ${room}.`,
+    });
+
+    await send(db, {
+      room: room,
+      character: 'Narrator',
+      text: `${character.name} traveled to the ${room}.`,
     });
 
     if (playerInRoom) {
