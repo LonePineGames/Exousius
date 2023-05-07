@@ -14,7 +14,11 @@
       --light-bg: #EEE;
       --light-text: #333;
       --alternate-bg: #FFF;
-      --accent-color: #FF1E1E; /*1E90FF;*/
+      --red-bg: #FF1E1E; /*1E90FF;*/
+      --blue-bg: #1E90FF;
+      --green-bg: #1E901E;
+      --purple-bg: #FF1E90;
+      --white-bg: #FFF;
       --primary-color: #b3d9ff;
       --orange-accent: #FF901E;
 
@@ -93,7 +97,6 @@
 
     .context-message {
       margin: 0 0 5rem 0;
-      /*background-color: var(--accent-color);*/
       color: var(--primary-color);
       text-shadow: 0 0 0.5rem var(--light-text);
     }
@@ -135,10 +138,10 @@
       padding: 0 0.5rem 0rem 0.5rem;
 
       font-weight: bold;
-      background-color: var(--accent-color);
+      background-color: var(--red-bg);
       color: white;
       border-radius: 1rem 0 1rem 0;
-      box-shadow: 0 0 0.5rem var(--accent-color);
+      box-shadow: 0 0 0.5rem var(--red-bg);
       text-shadow: 0 0 0.5rem black;
     }
 
@@ -174,7 +177,7 @@
       display: none;
       /*display: flex;*/
       justify-content: space-between;
-      background-color: var(--accent-color);
+      background-color: var(--red-bg);
       border-radius: 1rem 0 1rem 0;
     }
 
@@ -234,7 +237,7 @@
     #hp {
       top: 6rem;
       right: 3rem;
-      color: var(--accent-color);
+      color: var(--red-bg);
     }
 
     #shards {
@@ -248,7 +251,7 @@
     }
 
     #scriptsButton:hover {
-      background-color: var(--accent-color);
+      background-color: var(--red-bg);
     }
 
     #suggestions {
@@ -266,20 +269,49 @@
       width: fit-content;
 
       font-weight: bold;
-      background-color: var(--accent-color);
+      background-color: black;
       text-shadow: 0 0 0.5rem black;
       color: white;
       border-radius: 1rem 0 1rem 0;
       border: none;
+      box-shadow: 0 0 0.5rem black;
     }
 
-    .message .suggestion {
-      background: none;
-      box-shadow: 0 0 0.25rem #777;
+    .suggestion:hover {
+      box-shadow: 0 0 0.5rem #777;
     }
 
-    .message .suggestion:hover {
-      background-color: var(--accent-color);
+    .suggestion-go {
+      background-color: var(--green-bg);
+    }
+
+    .suggestion-summon {
+      background-color: var(--purple-bg);
+    }
+
+    .suggestion-scry {
+      background-color: var(--purple-bg);
+    }
+
+    .suggestion-search {
+      background-color: var(--blue-bg);
+    }
+
+    .suggestion-strike {
+      background-color: var(--red-bg);
+    }
+
+    .suggestion-heal {
+      background-color: var(--white-bg);
+      color: var(--red-bg);
+    }
+
+    .suggestion-give {
+      background-color: var(--blue-bg);
+    }
+
+    .suggestion-create {
+      background-color: var(--purple-bg);
     }
 
     #scriptsPanel {
@@ -338,7 +370,7 @@
     }
 
     ::-webkit-scrollbar-thumb {
-      background-color: var(--accent-color);
+      background-color: var(--red-bg);
       border-radius: 0.25rem;
     }
 
@@ -457,6 +489,16 @@
     window.addEventListener('resize', setVhVariable);
     //setInterval(setVhVariable, 1000);
 
+
+    function getActionName(action) {
+      let spaceNdx = action.indexOf(' ');
+      if (spaceNdx === -1) {
+        return action.substring(1, action.length - 1);
+      } else {
+        return action.substring(1, spaceNdx);
+      }
+    }
+
     document.getElementById('message-input').addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
           socket.emit('message', {text: event.target.value});
@@ -499,6 +541,7 @@
             const action = `%${textSegments[i]}%`;
             butt.innerText = action;
             butt.classList.add('suggestion');
+            butt.classList.add(`suggestion-${getActionName(action)}`);
             butt.addEventListener('click', () => {
               socket.emit('message', {text: action});
             });
@@ -620,6 +663,7 @@
         let suggestionElement = document.createElement('button');
         suggestionElement.innerText = suggestion;
         suggestionElement.classList.add('suggestion');
+        suggestionElement.classList.add(`suggestion-${getActionName(suggestion)}`);
         suggestionElement.addEventListener('click', () => {
           if (onCooldown) {
             return;
