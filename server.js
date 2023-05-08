@@ -6,7 +6,7 @@ const sqlite3 = require('sqlite3').verbose();
 const sqlite = require('sqlite');
 const dbFile = './world.db';
 const RomanNumerals = require('roman-numerals');
-const { promptBot, punchUpNarration, describePlace, createPicture, listMobs } = require('./prompt');
+const { promptBot, punchUpNarration, describePlace, createPicture, listMobs, promptCharacterBuilder } = require('./prompt');
 const { listNames } = require('./names');
 
 let gameRate = 5000;
@@ -1133,9 +1133,38 @@ function removeSocket(socket) {
   socketTable = socketTable.filter((entry) => entry.socket !== socket);
 }
 
+async function characterBuilder(socket, cbHistory, msg) {
+  if (msg) {
+    msg.character = 'Player';
+    msg.room = 'origin';
+    msg.timestamp = new Date().toISOString();
+    cbHistory.push(msg);
+  }
+
+  let response = await promptCharacterBuilder(cbHistory);
+  let narratorMsg = {
+    timestamp: new Date().toISOString(),
+    room: 'origin',
+    character: 'Narrator',
+    text: response,
+  };
+
+  socket.emit('cb-message', narratorMsg);
+  cbHistory.push(narratorMsg);
+}
+
 initializeDatabase().then((db) => {
   io.on('connection', async (socket) => {
     console.log('a user connected');
+
+    let cbHistory = [];
+    socket.on('cb-connect', async () => {
+      console.log('cb-connect');
+      characterBuilder(socket, cbHistory);
+    });
+    socket.on('cb-message', async (msg) => {
+      characterBuilder(socket, cbHistory, msg);
+    });
 
     const name = 'Arkim';
 
@@ -1269,7 +1298,7 @@ initializeDatabase().then((db) => {
       setTimeout(doGameStep, 1000);
     }
   }
-  doGameStep();
+  //doGameStep();
 
 }).catch((err) => {
   console.error(err);

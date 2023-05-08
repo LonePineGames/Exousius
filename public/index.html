@@ -79,22 +79,6 @@
       text-align: left;
     }
 
-    .message.system::before {
-      content: "aaaa";
-      visibility: hidden;
-      /*
-      text-align: center;
-      margin-left: auto;
-      margin-right: auto;
-      */
-    }
-
-    .message.system .name {
-      display: none;
-      background-color: var(--frame-bg);
-      box-shadow: none;
-    }
-
     .message.me {
       text-align: right;
       margin-left: auto;
@@ -178,205 +162,6 @@
       font-family: 'Cardo', serif;
     }
 
-    #toolbar {
-      display: none;
-      /*display: flex;*/
-      justify-content: space-between;
-      background-color: var(--red-bg);
-      border-radius: 1rem 0 1rem 0;
-    }
-
-    .toolbar-button {
-      background: none;
-      border: none;
-      padding: 0.5rem;
-      color: var(--light-text);
-      cursor: pointer;
-    }
-
-    .active {
-      color: var(--primary-color);
-    }
-
-    .toolbar-button:hover {
-      color: var(--primary-color);
-    }
-
-    #room {
-      position: absolute;
-      top: 6rem;
-      left: 3rem;
-      z-index: 1;
-      width: fit-content;
-      padding: 0.5rem 1rem;
-      border-radius: 0 0 1rem 1rem;
-      background-color: var(--frame-bg);
-      color: white;
-      font-size: 2rem;
-      text-transform: capitalize;
-      text-shadow: 0 0 0.5rem black;
-      box-shadow: 1rem 1rem 2rem black,
-        -0.25rem -0.25rem 0.5rem black inset,
-        0.25rem 0.25rem 0.5rem #777 inset;
-    }
-
-    #hp, #shards, #scriptsButton {
-      position: absolute;
-      /*width: 2rem;
-      height: 2rem;*/
-      z-index: 1;
-
-      border-radius: 0 0 100% 100%;
-      font-size: 2rem;
-      text-align: center;
-      line-height: 2rem;
-      padding: 1rem;
-      background-color: var(--frame-bg);
-      color: white;
-      text-shadow: 0 0 0.5rem black;
-      box-shadow: 1rem 1rem 2rem black,
-        -0.25rem -0.25rem 0.5rem black inset,
-        0.25rem 0.25rem 0.5rem #777 inset;
-    }
-
-    #hp {
-      top: 6rem;
-      right: 3rem;
-      color: var(--red-bg);
-    }
-
-    #shards {
-      top: 9rem;
-      right: 2rem;
-    }
-
-    #scriptsButton {
-      top: 9rem;
-      left: 2rem;
-    }
-
-    #scriptsButton:hover {
-      background-color: var(--red-bg);
-    }
-
-    #suggestions {
-      margin-top: 0.5rem;
-      height: 12rem;
-      overflow-y: auto;
-
-      text-align: right;
-    }
-
-    #suggestions.cooldown {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .suggestion {
-      margin: 0.25rem 0;
-      padding: 0 0.5rem 0rem 0.5rem;
-      width: fit-content;
-
-      font-weight: bold;
-      background-color: black;
-      text-shadow: 0 0 0.5rem black;
-      color: white;
-      border-radius: 1rem 0 1rem 0;
-      border: none;
-      box-shadow: 0 0 0.5rem black;
-    }
-
-    .suggestion:hover {
-      box-shadow: 0 0 0.5rem #777;
-    }
-
-    .suggestion-go {
-      background-color: var(--green-bg);
-    }
-
-    .suggestion-summon {
-      background-color: var(--purple-bg);
-    }
-
-    .suggestion-scry {
-      background-color: var(--purple-bg);
-    }
-
-    .suggestion-protect {
-      background-color: var(--purple-bg);
-    }
-
-    .suggestion-search {
-      background-color: var(--blue-bg);
-    }
-
-    .suggestion-strike {
-      background-color: var(--red-bg);
-    }
-
-    .suggestion-heal {
-      background-color: var(--white-bg);
-      color: var(--red-bg);
-    }
-
-    .suggestion-give {
-      background-color: var(--blue-bg);
-    }
-
-    .suggestion-create {
-      background-color: var(--purple-bg);
-    }
-
-    #scriptsPanel {
-      display: none;
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      overflow-y: auto;
-      background-color: rgba(0,0,0,0.5);
-    }
-
-    #scriptsContainer {
-      display: flex;
-      max-width: 24rem;
-      margin: 10rem auto;
-      flex-direction: column;
-      padding: 1rem;
-    }
-
-    button.script {
-      display: flex;
-      flex-direction: column;
-      font-family: 'Cardo', serif;
-      border: none;
-      line-height: 1.25rem;
-      font-size: 1rem;
-      min-height: 24rem;
-      background-color: var(--script-bg);
-      border-radius: 0.5rem;
-      color: black;
-      margin: 2rem 0;
-      padding: 4rem;
-      box-shadow: 1rem 1rem 2rem black,
-        -0.25rem -0.25rem 0.5rem black inset;
-    }
-
-    .script .name {
-      text-transform: capitalize;
-      text-align: center;
-      font-weight: bold;
-      font-size: 2rem;
-      height: 4rem;
-      margin-bottom: 1rem;
-      border-bottom: 1px solid black;
-    }
-
-    .script .text {
-      text-align: justify;
-      font-size: 1rem;
-      line-height: 1.25rem;
-    }
-
     /* Scrollbar Styling */
     ::-webkit-scrollbar {
       width: 0.5rem;
@@ -404,10 +189,6 @@
 <body>
 
   <div id="chat-container">
-    <div id="room">Origin</div>
-    <button id="scriptsButton"><i class="fas fa-scroll"></i></button>
-    <div id="hp">10</div>
-    <div id="shards">0</div>
     <div id="message-container">
       <div class="context-message">
         <img src="enmeshed.png" alt="Exousius">
@@ -420,34 +201,18 @@
     </div>
     <div id="player-name">Name</div>
     <textarea id="message-input" placeholder="ENTER YOUR WORDS" autofocus="true"></textarea>
-    <div id="toolbar">
-      <button id="reset" class="toolbar-button"><i class="fas fa-undo"></i> Reset</button>
-      <button id="rate-0" class="toolbar-button"><i class="fas fa-pause"></i></button>
-      <button id="rate-1" class="toolbar-button"><i class="fas fa-forward-step"></i></button>
-      <button id="rate-2" class="toolbar-button"><i class="fas fa-play"></i></button>
-      <button id="rate-3" class="toolbar-button"><i class="fas fa-forward"></i></button>
-      <button id="mute" class="toolbar-button active"><i class="fas fa-volume-up"></i></button>
-      <button id="send" class="toolbar-button">Send <i class="fas fa-paper-plane"></i></button>
-    </div>
-
-    <div id="suggestions"></div>
-
-    <div id="scriptsPanel">
-      <div id="scriptsContainer"></div>
-    </div>
-
   </div>
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    let myName = '';
+    let myName = 'Player';
     const socket = io();
     const messageContainer = document.getElementById('message-container');
-    /*
-    const messageSound = new Audio('message.wav');
-    messageSound.volume = 0.5;
-    const serverSound = new Audio('server.wav');
-    serverSound.volume = 0.5;
-    */
+
+    socket.on('connect', () => {
+      console.log('connect');
+      socket.emit('cb-connect');
+    });
+
     const soundQueue = [];
     let mute = false;
 
@@ -463,13 +228,6 @@
       }
       sound.volume = 0.5;
       sound.play();
-      /*
-      if (player === 'Narrator') {
-        serverSound.play();
-      } else {
-        messageSound.play();
-      }
-      */
     }
 
     // Function to play sound and process messages from the queue
@@ -502,30 +260,23 @@
     window.addEventListener('resize', setVhVariable);
     //setInterval(setVhVariable, 1000);
 
-
-    function getActionName(action) {
-      let spaceNdx = action.indexOf(' ');
-      if (spaceNdx === -1) {
-        return action.substring(1, action.length - 1);
-      } else {
-        return action.substring(1, spaceNdx);
-      }
-    }
-
     document.getElementById('message-input').addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
-          socket.emit('message', {text: event.target.value});
-          event.target.value = '';
+          sendMessage();
           event.preventDefault();
         }
     });
 
+    /*
     socket.on('character', (name) => {
       document.getElementById('player-name').innerText = name;
       myName = name;
     });
+    */
 
     function messageReceived(message) {
+      soundQueue.push(message.character);
+
       const messages = document.getElementById('messages');
 
       // Creating div for character's name
@@ -540,29 +291,12 @@
 
       if (message.character === 'Narrator' && message.text === 'PROMOSURVEY') {
         messageElement.innerHTML = '<a class="text" href="https://forms.gle/knteLs8qrNTf5N9L7" target="_blank">Did "Exousius" change the way you feel about AI? Please answer this single-question anonymous survey.</a>';
-      } else {
 
-        let textSegments = message.text.split('%');
-        for (let i = 0; i < textSegments.length; i++) {
-          if (i % 2 === 0) {
-            const textElement = document.createElement('span');
-            textElement.innerText = textSegments[i];
-            textElement.classList.add('text');
-            messageElement.appendChild(textElement);
-          } else {
-            const butt = document.createElement('button');
-            const action = `%${textSegments[i]}%`;
-            butt.innerText = action;
-            butt.classList.add('suggestion');
-            butt.classList.add(`suggestion-${getActionName(action)}`);
-            butt.addEventListener('click', () => {
-              if (onCooldown) return;
-              startCooldown();
-              socket.emit('message', {text: action});
-            });
-            messageElement.appendChild(butt);
-          }
-        }
+      } else {
+        const textElement = document.createElement('span');
+        textElement.innerText = message.text;
+        textElement.classList.add('text');
+        messageElement.appendChild(textElement);
       }
 
       if (message.character === 'Narrator') {
@@ -576,32 +310,19 @@
       scrollToBottom();
     }
 
-    socket.on('message', async (message) => {
-      soundQueue.push(message.character);
+    socket.on('cb-message', async (message) => {
       messageReceived(message);
-    });
-
-    socket.on('previous messages', async (messages) => {
-      for (let i = 0; i < messages.length; i++) {
-        messageReceived(messages[i]);
-      }
     });
 
     function reset() {
       socket.emit('reset');
       const messages = document.getElementById('messages');
       messages.innerHTML = '';
-      socket.emit('set-rate', currentRate);
     }
 
     socket.on('reset', function() {
       const messages = document.getElementById('messages');
       messages.innerHTML = '';
-      socket.emit('set-rate', currentRate);
-    });
-
-    socket.on('room', function(room) {
-      document.getElementById('room').innerText = room;
     });
 
     socket.on('background-image', function(img) {
@@ -614,80 +335,6 @@
       document.body.style.background = `url(${img}), #333`;
       document.body.style.backgroundSize = 'cover';
       document.body.style.backgroundPosition = 'center';
-    });
-
-    socket.on('shards', function(shards) {
-      document.getElementById('shards').innerText = shards;
-    });
-
-    socket.on('hp', function(hp) {
-      document.getElementById('hp').innerText = hp;
-    });
-
-    socket.on('scripts', function(scripts) {
-      const scriptsElement = document.getElementById('scriptsContainer');
-      scriptsElement.innerHTML = '';
-      scripts.forEach((script) => {
-        const scriptElement = document.createElement('button');
-        scriptElement.classList.add('script');
-        scriptsElement.appendChild(scriptElement);
-
-        const scriptNameElement = document.createElement('div');
-        scriptNameElement.innerText = script.name;
-        scriptNameElement.classList.add('name');
-        scriptElement.appendChild(scriptNameElement);
-
-        const scriptTextElement = document.createElement('div');
-        scriptTextElement.innerText = script.script;
-        scriptTextElement.classList.add('text');
-        scriptElement.appendChild(scriptTextElement);
-      });
-    });
-
-    let onCooldown = false;
-    function startCooldown() {
-      const suggestionsElement = document.getElementById('suggestions');
-      suggestionsElement.classList.add('cooldown');
-      onCooldown = true;
-      setTimeout(() => {
-        suggestionsElement.classList.remove('cooldown');
-        onCooldown = false;
-      }, 3000);
-    }
-
-    let lastSuggestions = [];
-    socket.on('suggestions', function(suggestions) {
-      if (lastSuggestions.length === suggestions.length) {
-        let same = true;
-        for (let i = 0; i < suggestions.length; i++) {
-          if (suggestions[i] !== lastSuggestions[i]) {
-            same = false;
-            break;
-          }
-        }
-        if (same) {
-          return;
-        }
-      }
-      lastSuggestions = suggestions;
-
-      let suggestionsElement = document.getElementById('suggestions');
-      suggestionsElement.innerHTML = '';
-
-      suggestions.forEach((suggestion) => {
-        let suggestionElement = document.createElement('button');
-        suggestionElement.innerText = suggestion;
-        suggestionElement.classList.add('suggestion');
-        suggestionElement.classList.add(`suggestion-${getActionName(suggestion)}`);
-        suggestionElement.addEventListener('click', () => {
-          if (onCooldown) {
-            return;
-          }
-          socket.emit('message', {text: suggestion});
-          startCooldown();
-        });
-        suggestionsElement.appendChild(suggestionElement);
-      });
     });
 
     document.getElementById('reset').addEventListener('click', reset);
@@ -705,63 +352,15 @@
       playSound("player");
     });
 
-    document.getElementById('scriptsButton').addEventListener('click', () => {
-      let scriptsElement = document.getElementById('scriptsPanel');
-      if (scriptsElement.style.display === 'none') {
-        scriptsElement.style.display = 'block';
-      } else {
-        scriptsElement.style.display = 'none';
-      }
-    });
-
-    const rateButtons = [
-      { elementId: 'rate-0', rate: 0 },
-      { elementId: 'rate-1', rate: 10000 },
-      { elementId: 'rate-2', rate: 6000 },
-      { elementId: 'rate-3', rate: 3000 },
-    ];
-
-    let aurrentActiveButtonId = 'rate-1';
-    let lastRate = 6000;
-    let currentRate = 6000;
-
-    rateButtons.forEach(({ elementId, rate }) => {
-      document.getElementById(elementId).addEventListener('click', () => {
-        socket.emit('set-rate', rate);
-        document.getElementById(currentActiveButtonId).classList.remove('active');
-        document.getElementById(elementId).classList.add('active');
-        currentActiveButtonId = elementId;
-        lastRate = rate;
-        currentRate = rate;
-      });
-    });
-
-    document.getElementById(currentActiveButtonId).classList.add('active');
-
     function sendMessage() {
       const input = document.getElementById('message-input');
       if (!input.value) {
         return;
       }
-      socket.emit('message', { text: input.value });
+      socket.emit('cb-message', { text: input.value });
+      messageReceived({ character: 'Player', text: input.value });
       input.value = '';
     }
-
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        socket.emit('set-rate', 0);
-        currentRate = 0;
-        // Highlight the 'pause' button
-        document.getElementById(currentActiveButtonId).classList.remove('active');
-        document.getElementById('rate-0').classList.add('active');
-      } else {
-        socket.emit('set-rate', lastRate);
-        currentRate = lastRate;
-        // Highlight the last active button
-        document.getElementById(currentActiveButtonId).classList.add('active');
-        document.getElementById('rate-0').classList.remove('active');
-      }
-    });
 
     // Force HTTPS
     window.onload = function() {
