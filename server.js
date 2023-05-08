@@ -588,7 +588,16 @@ let actionHandlers = {
       return;
     }
 
-    let target = potentialTargets[0];
+    if (Math.random() < 0.5) {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `${character.name} tried to strike ${targetName} but missed.`,
+      });
+      return;
+    }
+
+    let target = potentialTargets[Math.floor(Math.random() * potentialTargets.length)];
     let damage = 1;
     if (character.shards > 0) {
       damage += 1 + Math.floor(character.shards/5);
@@ -617,9 +626,11 @@ let actionHandlers = {
 
     await db.run(
       `UPDATE characters SET hp = ?, shards = ? WHERE id = ?;`,
-      [target.hp, target.shards, target.name]
+      [target.hp, target.shards, target.id]
     );
+    console.log(target, message);
     socketTable.filter((entry) => entry.character === target.name).forEach((entry) => {
+      console.log("updating browser");
       entry.socket.emit('hp', target.hp);
       entry.socket.emit('shards', target.shards);
     });
@@ -692,19 +703,18 @@ let actionHandlers = {
     let heal = Math.ceil(1 + character.shards / 2);
     heal = Math.min(heal, 10 - target.hp);
     console.log(character, target, heal);
-
-    await send(db, {
-      room: character.room,
-      character: 'Narrator',
-      text: `${character.name} healed ${target.name} for ${heal}HP.`,
-    });
-
     target.hp += heal;
 
     await db.run(
       `UPDATE characters SET hp = ? WHERE id = ?;`,
       [target.hp, target.id]
     );
+
+    await send(db, {
+      room: character.room,
+      character: 'Narrator',
+      text: `${character.name} healed ${target.name} for ${heal}HP.`,
+    });
 
     socketTable.filter((entry) => entry.character === target.name).forEach((entry) => {
       entry.socket.emit('hp', target.hp);
@@ -956,8 +966,8 @@ const actionSuggestions = [
     return result;
   },
 
-  async function protectSuggestions(db, character) {
-    if (character.shards <= 0 || character.role === 'mob') {
+  async function protectScrySuggestions(db, character) {
+    if (character.shards <= 0 || character.role !== 'user') {
       return [];
     }
 
@@ -967,10 +977,10 @@ const actionSuggestions = [
     );
 
     if (room.mobs.length === 0) {
-      return [];
+      return ['%scry%'];
     }
 
-    return ['%protect%'];
+    return ['%protect%', '%scry%'];
   },
 
   async function returnSuggestions(db, character) {
@@ -1430,7 +1440,7 @@ async function runPrompts(db) {
     charactersToPrompt.push(character);
   }
 
-  let numToPrompt = charactersToPrompt.length * Math.random() * 0.01;
+  let numToPrompt = charactersToPrompt.length * Math.random() * 0.001;
   numToPrompt = Math.min(numToPrompt, 3);
 
   for (let i = 0; i < numToPrompt; i++) {

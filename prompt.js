@@ -49,7 +49,7 @@ ${character.name}: I must go! %go forest%
 ### Response
 ${character.name}: `;
 
-  console.log(prompt);
+  //console.log(prompt);
 
   try {
     const completion = await openai.createChatCompletion({
