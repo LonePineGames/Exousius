@@ -25,9 +25,11 @@ const openai = new OpenAIApi(configuration);
 async function promptBot(character, suggestions, inRoom, history) {
   //console.log('promptBot', character, inRoom);
   let inRoomText = listNames(inRoom.map((p) => p.name));
-  const prompt = 
+  let summonText = character.summoner === 'Narrator' ? '' : ` I was summoned by ${character.summoner}.`;
+  let maxHP = character.role === 'mob' ? '' : ` out of 10`;
+  const prompt =
 
-`This is a text-based role playing game set in a medieval fantasy world. I am ${character.name}, a demon summoned by ${character.summoner}.
+`This is a text-based role playing game set in a medieval fantasy world. I am ${character.name}.${summonText}
 
 ${character.script}
 
@@ -38,10 +40,10 @@ ${suggestions.join('\n')}
 ${history.map((h) => `${h.character}: ${h.text}`).join('\n')}
 
 ### Context
-I am in the ${character.room}. Creatures in the ${character.room}: ${inRoomText}. I have ${character.hp}/10 HP and I am carrying ${character.shards} shards.
+I am in the ${character.room}. Creatures in the ${character.room}: ${inRoomText}. I have ${character.hp}${maxHP} HP and I am carrying ${character.shards} shards.
 
 ### Instructions
-Output only ${character.name}'s response. Keep the response brief, under 20 words. If ${character.name} remains silent, output an empty string. If ${character.name} does an action, output one of the suggested actions as part of the response. Example:
+Output only ${character.name}'s response. Keep the response brief, under 20 words. If ${character.name} does an action, output one of the suggested actions as part of the response. Example:
 ${character.name}: Master, I must go! %go forest%
 
 ### Response
@@ -51,7 +53,7 @@ ${character.name}: `;
 
   try {
     const completion = await openai.createChatCompletion({
-      model: "gpt-4",
+      model: character.role === 'mob' ? "gpt-3.5-turbo" : "gpt-4",
       temperature: 1.2,
       max_tokens: 80,
       messages: [{role: "user", content: prompt}],
@@ -74,11 +76,8 @@ async function punchUpNarration(narration, history, room, inRoom) {
   const prompt =
 `This is a text-based role playing game set in a medieval fantasy world. I am the narrator.
 
-### History
-${history.map((h) => `${h.character}: ${h.text}`).join('\n')}
-
 ### Context
-${room.description} Creatures in the ${room.name}: ${inRoomText}.
+${room.description} Creatures currently in the ${room.name}: ${inRoomText}. Only these ceatures are here.
 
 Pronouns:
 Narrator: I
@@ -89,9 +88,12 @@ Mort: He
 Temusea: She
 
 ### Instructions
-Improve the following narration. Keep the response brief, under 20 words. Preserve all details, especially numbers. Fix any grammatical mistakes. Add drama and enticing language. Don't include action commands (e.g. %go forest%). Use past tense.
+Improve the following narration. Keep the response brief, under 20 words. Preserve all details, especially numbers. Fix any grammatical mistakes. Add drama and enticing language. Don't include action commands (e.g. %go forest%). Use past tense. Connect the narration to the history and context.
 
 Narrator: ${narration}
+
+### History
+${history.map((h) => `${h.character}: ${h.text}`).join('\n')}
 
 ### Response
 Narrator: `;

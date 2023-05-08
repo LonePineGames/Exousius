@@ -600,7 +600,7 @@ let actionHandlers = {
     }
 
     await db.run(
-      `UPDATE characters SET hp = ?, shards = ? WHERE name = ?;`,
+      `UPDATE characters SET hp = ?, shards = ? WHERE id = ?;`,
       [target.hp, target.shards, target.name]
     );
     socketTable.filter((entry) => entry.character === target.name).forEach((entry) => {
@@ -974,7 +974,7 @@ const actionSuggestions = [
       .map((ch) => `%strike ${ch.name}%`);
 
     let heal = validCharacters
-      .filter((ch) => ch.hp < 10 && ch.shards >= 0 && ch.name !== character.name)
+      .filter((ch) => ch.hp < 10 && ch.shards >= 0 && ch.name !== character.name && ch.role !== 'mob')
       .map((ch) => `%heal ${ch.name}%`);
 
     let me = validCharacters.find((ch) => ch.name === character.name);
@@ -993,7 +993,7 @@ const actionSuggestions = [
     let shardsToGive = character.role === 'bot' ? character.shards : 1;
 
     let validCharacters = await db.all(
-      `SELECT * FROM characters WHERE room = ?;`,
+      `SELECT * FROM characters WHERE room = ? and role != 'mob';`,
       [character.room]
     );
 
@@ -1096,7 +1096,7 @@ initializeDatabase().then((db) => {
 
       await db.run(
         `INSERT INTO scripts (character, name, script) VALUES (?, ?, ?);`,
-        [name, 'Ekel', 'I am Ekel. I am always loyal to my summoner. I stay with my summoner, going wherever my summoner goes, and I %strike% my summoner\'s enemies. If my master asks me to %return% I will do so immediately.']
+        [name, 'Ekel', 'I am Ekel. I am always loyal to my summoner. I stay with my summoner, going wherever my summoner goes, and I %strike% my summoner\'s enemies. I can %heal% as well as %search% for shards. If my master asks me to %return% I will do so immediately.']
       );
 
       await db.run(
@@ -1106,7 +1106,7 @@ initializeDatabase().then((db) => {
 
       await db.run(
         `INSERT INTO scripts (character, name, script) VALUES (?, ?, ?);`,
-        [name, 'Mort', 'I am Mort. I despise my summoner. I will %strike% my summoner until death. If my summoner is not nearby, I will %search% for more shards to make myself more powerful. I can also %summon% other demons. Odel is good at collecting shards quickly. Another Mort would be a vital ally.']
+        [name, 'Mort', 'I am Mort. I despise my summoner and want to grow more powerful than them. I will %search% for more shards to make myself more powerful. If I cannot find any shards, I will %summon Odel% as she is good at collecting shards quickly. I can also %heal% and %go elsewhere%.']
       );
 
       await db.run(
@@ -1294,9 +1294,12 @@ async function spawnMobInRoom(db, room) {
   let mob = mobs[Math.floor(Math.random() * mobs.length)];
   let shards = Math.random() < 0.2 ? 1 : 0;
   let hp = 2 + Math.floor(Math.random() * 6);
+
+  const script = `I am a ${mob}, a low level mob. I started with ${hp} hp. I am aggressive and will immediately %strike% non-mob characters in the game. However, I may be talked out of violence.`;
+
   await db.run(
-    `INSERT INTO characters (name, room, hp, shards, role, script, summoner) VALUES (?, ?, ?, ?, 'mob', '', 'Narrator');`,
-    [mob, room.name, hp, shards]
+    `INSERT INTO characters (name, room, hp, shards, role, script, summoner) VALUES (?, ?, ?, ?, 'mob', ?, 'Narrator');`,
+    [mob, room.name, hp, shards, script]
   );
 
   await send(db, {
@@ -1348,6 +1351,9 @@ async function moveMobs(db) {
     return;
   }
 
+  promptCharacter(db, mob);
+
+  /*
   // randomly select a character in the same room
   let character = charactersInRoom[Math.floor(Math.random() * charactersInRoom.length)];
   await send(db, {
@@ -1355,6 +1361,7 @@ async function moveMobs(db) {
     character: mob.name,
     text: `%strike ${character.name}%`,
   });
+  */
 }
 
 async function promptOnce(db) {
@@ -1363,6 +1370,10 @@ async function promptOnce(db) {
     `SELECT * FROM characters WHERE role = 'bot' and hp > 0 ORDER BY RANDOM() LIMIT 1;`
   );
 
+  await promptCharacter(db, character);
+}
+
+async function promptCharacter(db, character) {
   if (character === undefined) {
     return;
   }
