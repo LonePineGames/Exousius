@@ -88,12 +88,17 @@ Mort: He
 Temusea: She
 
 ### Instructions
-Improve the following narration. Keep the response brief, under 20 words. Preserve all details, especially numbers. Fix any grammatical mistakes. Add drama and enticing language. Don't include action commands (e.g. %go forest%). Use past tense. Connect the narration to the history and context.
+Improve the following narration. Keep the response brief, under 20 words. Preserve all details, especially numbers. Fix any grammatical mistakes, capitalization and pluralization issues, and so on. Add drama and enticing language. Don't include action commands (e.g. %go forest%). Only describe the events mentioned in the original narration. Use past tense. Connect the narration to the history and context. Make it sound like an old fairy tale.
 
-Narrator: ${narration}
+### Example
+Original: Arkim healed Arkim for 2HP. Arkim searched the origin and found a shard. Arkim searched the origin for shards, but found nothing.
+Response: After the battle, Arkim healed himself for 2HP. Then he turned to his most important task: the search for shards. For hours, he searched the dark void, fruitlessly... Until, finally, he found a shard! His spirits raised, he continued his search. But a second shard would be elusive.
 
 ### History
 ${history.map((h) => `${h.character}: ${h.text}`).join('\n')}
+
+### Original Narration
+Narrator: ${narration}
 
 ### Response
 Narrator: `;
@@ -103,14 +108,15 @@ Narrator: `;
     const completion = await openai.createChatCompletion({
       model: "gpt-3.5-turbo",
       temperature: 1.2,
-      max_tokens: 80,
+      max_tokens: 200,
       messages: [{role: "user", content: prompt}],
     });
     const message = completion.data.choices[0].message.content;
+    return message;
     //console.log('message', message);
-    const lines = message.split("\n")
-    const firstLine = lines[0].trim();
-    return firstLine;
+    //const lines = message.split("\n")
+    //const firstLine = lines[0].trim();
+    //return firstLine;
   } catch (error) {
     console.error(error);
   }

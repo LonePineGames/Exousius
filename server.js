@@ -879,7 +879,24 @@ let actionHandlers = {
       character: 'Narrator',
       text: `${character.name} sacrificed a shard to protect the ${character.room} from ${previousMobsString}.`,
     });
-  }
+  },
+
+  async disappear(db, character, action) {
+    if (character.role !== 'mob') return;
+
+    await send(db, {
+      room: character.room,
+      character: 'Narrator',
+      text: `${character.name} decided to leave our heros alone.`
+    });
+
+    console.log('disappear', character);
+
+    await db.run(
+      `DELETE FROM characters WHERE id = ?;`,
+      [character.id]
+    );
+  },
 };
 
 actionHandlers['return'] = async function(db, character, action) {
@@ -962,7 +979,6 @@ const actionSuggestions = [
       [character.name]
     );
     let result = scripts.map((script) => `%summon ${script.name}%`);
-    result.push('%scry%');
     return result;
   },
 
@@ -978,16 +994,8 @@ const actionSuggestions = [
 
     if (room.mobs.length === 0) {
       return ['%scry%'];
-    }
-
-    return ['%protect%', '%scry%'];
-  },
-
-  async function returnSuggestions(db, character) {
-    if (character.role === 'bot') {
-      return ['%return%'];
     } else {
-      return [];
+      return ['%protect%', '%scry%'];
     }
   },
 
@@ -1037,6 +1045,16 @@ const actionSuggestions = [
       .map((ch) => `%give ${ch.name} ${shardsToGive}%`);
 
     return give;
+  },
+
+  async function disappearReturnSuggestions(db, character) {
+    if (character.role === 'mob') {
+      return ['%disappear%'];
+    } else if (character.role === 'bot') {
+      return ['%return%'];
+    } else {
+      return [];
+    }
   },
 
   async function searchSuggestions(db, character) {
@@ -1335,7 +1353,7 @@ async function spawnMobInRoom(db, room) {
   let shards = Math.random() < 0.2 ? 1 : 0;
   let hp = 2 + Math.floor(Math.random() * 6);
 
-  const script = `I am a ${mob}, a low level mob. I started with ${hp} hp. I am aggressive and will immediately %strike characters% in the game. However, I may be talked out of violence.`;
+  const script = `I am a ${mob}, a low level mob. I started with ${hp} hp. I am aggressive and will immediately %strike%. I will not %disappear% easily. However, I may be talked out of violence.`;
 
   await db.run(
     `INSERT INTO characters (name, room, hp, shards, role, script, summoner) VALUES (?, ?, ?, ?, 'mob', ?, 'Narrator');`,

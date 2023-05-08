@@ -261,9 +261,10 @@
 
     #suggestions {
       margin-top: 0.5rem;
-      text-align: right;
-      max-height: 10rem;
+      height: 12rem;
       overflow-y: auto;
+
+      text-align: right;
     }
 
     #suggestions.cooldown {
@@ -555,6 +556,8 @@
             butt.classList.add('suggestion');
             butt.classList.add(`suggestion-${getActionName(action)}`);
             butt.addEventListener('click', () => {
+              if (onCooldown) return;
+              startCooldown();
               socket.emit('message', {text: action});
             });
             messageElement.appendChild(butt);
