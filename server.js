@@ -227,8 +227,8 @@ async function spendShard(db, character) {
     [newShards, character.name]
   );
 
-  socketTable.filter((entry) => entry.character === character.name).forEach((entry) => {
-    entry.socket.emit('shards', newShards);
+  socketTable.filter((socket) => socket.character === character.name).forEach((socket) => {
+    socket.emit('shards', newShards);
   });
 
   return true;
@@ -272,10 +272,10 @@ let actionHandlers = {
     character.room = room;
 
     let playerInRoom = false;
-    socketTable.filter((entry) => entry.character === character.name).forEach(async (entry) => {
-      entry.socket.leave(previousRoom);
-      entry.socket.join(room);
-      entry.socket.emit('room', room);
+    socketTable.filter((socket) => socket.character === character.name).forEach(async (socket) => {
+      socket.leave(previousRoom);
+      socket.join(room);
+      socket.emit('room', room);
       playerInRoom = true;
     });
 
@@ -377,14 +377,14 @@ let actionHandlers = {
 
     console.log('picture', room.image_url);
 
-    socketTable.forEach(async (entry) => {
+    socketTable.forEach(async (socket) => {
       let characterRoom = await db.get(
         `SELECT room FROM characters WHERE name = ?;`,
-        [entry.character]
+        [socket.character]
       ).then((row) => row.room);
 
       if (characterRoom === roomName) {
-        entry.socket.emit('background-image', room.image_url);
+        socket.emit('background-image', room.image_url);
       }
     });
 
@@ -422,8 +422,8 @@ let actionHandlers = {
         [character.name]
       ).then((row) => row.shards);
 
-      socketTable.filter((entry) => entry.character === character.name).forEach((entry) => {
-        entry.socket.emit('shards', characterShards);
+      socketTable.filter((socket) => socket.character === character.name).forEach((socket) => {
+        socket.emit('shards', characterShards);
       });
 
     } else {
@@ -636,10 +636,10 @@ let actionHandlers = {
       [target.hp, target.shards, target.id]
     );
     console.log(target, message);
-    socketTable.filter((entry) => entry.character === target.name).forEach((entry) => {
+    socketTable.filter((socket) => socket.character === target.name).forEach((socket) => {
       console.log("updating browser");
-      entry.socket.emit('hp', target.hp);
-      entry.socket.emit('shards', target.shards);
+      socket.emit('hp', target.hp);
+      socket.emit('shards', target.shards);
     });
 
     if (target.hp <= 0) {
@@ -723,8 +723,8 @@ let actionHandlers = {
       text: `${character.name} healed ${target.name} for ${heal}HP.`,
     });
 
-    socketTable.filter((entry) => entry.character === target.name).forEach((entry) => {
-      entry.socket.emit('hp', target.hp);
+    socketTable.filter((socket) => socket.character === target.name).forEach((socket) => {
+      socket.emit('hp', target.hp);
     });
   },
 
@@ -802,12 +802,11 @@ let actionHandlers = {
       [character.shards, character.id]
     );
 
-    socketTable.forEach((entry) => {
-      if (entry.character === target.name) {
-        entry.socket.emit('shards', target.shards);
-      }
-      if (entry.character === character.name) {
-        entry.socket.emit('shards', character.shards);
+    socketTable.forEach((socket) => {
+      if (socket.character === target.name) {
+        socket.emit('shards', target.shards);
+      } else if (socket.character === character.name) {
+        socket.emit('shards', character.shards);
       }
     });
   },
@@ -843,10 +842,10 @@ let actionHandlers = {
       text: `${character.name} sacrificed a shard to look into the past. ${character.name} can now see everything that has ever happened in the ${character.room}.`,
     });
 
-    socketTable.filter((entry) => entry.character === character.name).forEach(async (entry) => {
-      entry.socket.emit('reset');
+    socketTable.filter((socket) => socket.character === character.name).forEach(async (socket) => {
+      socket.emit('reset');
       let seenMessages = await recentMessages(db, character, 100);
-      entry.socket.emit('previous messages', seenMessages);
+      socket.emit('previous messages', seenMessages);
     });
   },
 
@@ -928,8 +927,8 @@ actionHandlers['return'] = async function(db, character, action) {
     [character.summoner]
   );
 
-  socketTable.filter((entry) => entry.character === character.summoner).forEach((entry) => {
-    entry.socket.emit('shards', summoner.shards);
+  socketTable.filter((socket) => socket.character === character.summoner).forEach((socket) => {
+    socket.emit('shards', summoner.shards);
   });
 
   let message = {
@@ -1106,8 +1105,8 @@ async function reportRoom(db, character) {
     [character.room]
   ).then((rows) => rows.map((row) => row.name));
 
-  socketTable.filter((entry) => entry.character === character.name).forEach((entry) => {
-    entry.socket.emit('message', {
+  socketTable.filter((socket) => socket.character === character.name).forEach((socket) => {
+    socket.emit('message', {
       timestamp: new Date().toISOString(),
       room: character.room,
       character: 'Narrator',
@@ -1115,7 +1114,7 @@ async function reportRoom(db, character) {
     });
 
     console.log("reportRoom url", room.image_url);
-    entry.socket.emit('background-image', room.image_url);
+    socket.emit('background-image', room.image_url);
   });
 }
 
@@ -1133,11 +1132,15 @@ async function recentMessages(db, character, number) {
 }
 
 function addSocket(socket, character) {
-  socketTable.push({ socket, character });
+  socket.character = character;
+  // if the socket is not in the table, add it
+  if (!socketTable.find((entry) => entry === socket)) {
+    socketTable.push(socket);
+  }
 }
 
 function removeSocket(socket) {
-  socketTable = socketTable.filter((entry) => entry.socket !== socket);
+  socketTable = socketTable.filter((entry) => entry !== socket);
 }
 
 async function characterBuilder(socket, cbHistory, msg) {
@@ -1259,7 +1262,7 @@ initializeDatabase().then((db) => {
     reportRoom(db, character);
 
     socket.on('message', async (msg) => {
-      let character = socketTable.find((entry) => entry.socket === socket).character;
+      let character = socket.character;
       let room = await db.get(
         `SELECT room FROM characters WHERE name = ?;`,
         [character]
@@ -1282,7 +1285,7 @@ initializeDatabase().then((db) => {
     });
 
     socket.on('write-script', async (script) => {
-      let character = socketTable.find((entry) => entry.socket === socket).character;
+      let character = socket.character;
 
       // if the script already exists, update it
       let existingScript = await db.get(
