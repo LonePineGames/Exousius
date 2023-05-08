@@ -38,7 +38,10 @@ async function initializeDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       role TEXT NOT NULL,
       name TEXT NOT NULL,
+      status INTEGER NOT NULL,
       script TEXT NOT NULL,
+      description TEXT NOT NULL,
+      title TEXT NOT NULL,
       summoner TEXT NOT NULL,
       memory TEXT,
       room TEXT NOT NULL,
@@ -69,7 +72,9 @@ async function initializeDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       character TEXT NOT NULL,
       name TEXT NOT NULL,
-      script TEXT NOT NULL`);
+      script TEXT NOT NULL,
+      description TEXT NOT NULL,
+      title TEXT NOT NULL`);
 
   let originExists = await db.get(
     `SELECT name FROM rooms WHERE name = 'origin';`
@@ -511,8 +516,8 @@ let actionHandlers = {
     }
 
     await db.run(
-      `INSERT INTO characters (role, name, room, script, summoner, hp, shards) VALUES (?, ?, ?, ?, ?, ?, ?);`,
-      ['bot', summonInstance, character.room, script.script, character.name, 10, 0]
+      `INSERT INTO characters (role, name, room, status, script, description, title, summoner, hp, shards) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+      ['bot', summonInstance, character.room, 1, script.script, script.description, script.title, character.name, 10, 0]
     );
 
     let recentMessages = await db.all(
@@ -1177,29 +1182,46 @@ initializeDatabase().then((db) => {
 
     if (character === undefined) {
       await db.run(
-        `INSERT INTO characters (role, name, room, script, summoner, hp, shards) VALUES (?, ?, ?, ?, ?, ?, ?);`,
-        ['user', name, 'origin', '', 'Self', 10, 0]
+        `INSERT INTO characters (role, name, room, status, script, description, title, summoner, hp, shards) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+        ['user', name, 'origin', 1, '', '', 'He', 'Narrator', 10, 10]
       );
 
-      await db.run(
-        `INSERT INTO scripts (character, name, script) VALUES (?, ?, ?);`,
-        [name, 'Ekel', 'I am Ekel. I am always loyal to my summoner. I stay with my summoner, going wherever my summoner goes, and I %strike% my summoner\'s enemies. I can %heal% as well as %search% for shards. If my master asks me to %return% I will do so immediately.']
-      );
+      let demons = [
+        {
+          name: 'Ekel',
+          script: 'I am Ekel. I am always loyal to my summoner. I stay with my summoner, going wherever my summoner goes, and I %strike% my summoner\'s enemies. I can %heal% as well as %search% for shards. If my master asks me to %return% I will do so immediately.',
+          description: 'Ekel is a tall and imposing figure, clad in shining plate armor adorned with intricate engravings. Beneath the armor, Ekel wears a suit of chainmail, providing additional protection. As a knight archetype, Ekel wields a mighty sword with a jeweled hilt, which is used for striking down enemies. His helmet features a visor that can be lifted to reveal determined, steel-blue eyes and a chiseled jawline.',
+          title: 'He',
+        },
 
-      await db.run(
-        `INSERT INTO scripts (character, name, script) VALUES (?, ?, ?);`,
-        [name, 'Odel', 'I am Odel. I am always loyal to my summoner. I %search% for shards. When I find shards, I keep searching in the same place. When I find nothing, I %go% to a different place. When I have 5 shards, I return.']
-      );
+        {
+          name: 'Odel',
+          script: 'I am Odel. I am always loyal to my summoner. I %search% for shards. When I find shards, I keep searching in the same place. When I find nothing, I %go% to a different place. When I have 5 shards, I return.',
+          description: 'Odel is a petite and agile peasant, dressed in simple, earthy-toned clothing made from rough-woven fabric. Her long, braided hair is a deep chestnut color, framing her youthful face and sharp, hazel eyes. Odel wears a small pouch at her waist, where she keeps the shards she finds. She carries a trusty slingshot as her weapon, which she uses with surprising accuracy and skill.',
+          title: 'She',
+        },
 
-      await db.run(
-        `INSERT INTO scripts (character, name, script) VALUES (?, ?, ?);`,
-        [name, 'Mort', 'I am Mort. I despise my summoner and want to grow more powerful than them. I will %search% for more shards to make myself more powerful. If I cannot find any shards, I will %summon Odel% as she is good at collecting shards quickly. I can also %heal% and %go elsewhere%. But I will never %return% to my summoner. I would rather die fighting him than sumbit!']
-      );
+        {
+          name: 'Mort',
+          script: 'I am Mort. I am always loyal to my summoner. I %search% for shards. When I find shards, I keep searching in the same place. When I find nothing, I %go% to a different place. When I have 5 shards, I return.',
+          description: 'Mort is a mysterious figure, garbed in a flowing, dark cloak that conceals much of his appearance. As a wizard or rogue archetype, he wields a staff topped with a crystal orb that glows with arcane energy, using it to cast powerful spells. Mort\'s hood covers most of his face, leaving only a pair of piercing, silver eyes visible. The rest of his attire consists of dark, well-fitted clothing, ideal for blending into shadows and staying hidden.',
+          title: 'We',
+        },
 
-      await db.run(
-        `INSERT INTO scripts (character, name, script) VALUES (?, ?, ?);`,
-        [name, 'Temusea', 'I am Temusea. I can create beautiful lands and locations using a command such as %create ancient forest% or %create secret tavern%. I require one shard to create one location. New locations always have many shards, so it\'s a good idea to create more!'],
-      );
+        {
+          name: 'Temusea',
+          script: 'I am Temusea. I can create beautiful lands and locations using a command such as %create ancient forest% or %create secret tavern%. I require one shard to create one location. New locations always have many shards, so it\'s a good idea to create more!',
+          description: 'Temusea is an ethereal fey with an air of enchanting beauty. She has delicate, butterfly-like wings that shimmer with iridescent colors, and her long, flowing hair is a cascade of multicolored strands. Temusea is dressed in a gown of gossamer fabric, adorned with tiny, twinkling lights. As a magical fey, she can conjure powerful illusions and manipulate her surroundings. Instead of a weapon, Temusea uses her innate magical abilities to aid her allies and hinder her foes.',
+          title: 'Fey',
+        },
+      ];
+
+      for (let demon of demons) {
+        await db.run(
+          `INSERT INTO scripts (character, name, script, description, title) VALUES (?, ?, ?, ?, ?);`,
+          [name, demon.name, demon.script, demon.description, demon.title]
+        );
+      }
 
       character = await db.get(
         `SELECT * FROM characters WHERE name = ?;`,
@@ -1385,8 +1407,8 @@ async function spawnMobInRoom(db, room) {
   const script = `I am a ${mob}, a low level mob. I started with ${hp} hp. I am aggressive and will immediately %strike%. I will not %disappear% easily. However, I may be talked out of violence.`;
 
   await db.run(
-    `INSERT INTO characters (name, room, hp, shards, role, script, summoner) VALUES (?, ?, ?, ?, 'mob', ?, 'Narrator');`,
-    [mob, room.name, hp, shards, script]
+    `INSERT INTO characters (role, name, room, status, script, description, title, summoner, hp, shards) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+    ['mob', mob, room.name, 1, script, '', '', 'Narrator', hp, shards]
   );
 
   await send(db, {
