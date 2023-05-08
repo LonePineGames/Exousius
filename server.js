@@ -277,15 +277,15 @@ let actionHandlers = {
       text: `${character.name} left to go to the ${room}.`,
     });
 
+    if (playerInRoom) {
+      reportRoom(db, character, room);
+    }
+
     await send(db, {
       room: room,
       character: 'Narrator',
       text: `${character.name} traveled to the ${room}.`,
     });
-
-    if (playerInRoom) {
-      reportRoom(db, character, room);
-    }
   },
 
   async create(db, character, action) {
@@ -388,7 +388,7 @@ let actionHandlers = {
       await send(db, {
         room: character.room,
         character: 'Narrator',
-        text: `${character.name} found a shard.`,
+        text: `${character.name} searched the ${character.room} and found a shard.`,
       });
 
       let characterShards = await db.get(
@@ -404,7 +404,7 @@ let actionHandlers = {
       await send(db, {
         room: character.room,
         character: 'Narrator',
-        text: `But ${character.name} found nothing.`,
+        text: `${character.name} searched the ${character.room} for shards, but found nothing.`,
       });
     }
   },
@@ -878,10 +878,6 @@ const actionSuggestions = [
     return result;
   },
 
-  async function searchSuggestions(db, character) {
-    return ['%search%'];
-  },
-
   async function returnSuggestions(db, character) {
     if (character.role === 'bot') {
       return ['%return%'];
@@ -929,6 +925,10 @@ const actionSuggestions = [
       .map((ch) => `%give ${ch.name} ${shardsToGive}%`);
 
     return give;
+  },
+
+  async function searchSuggestions(db, character) {
+    return ['%search%'];
   },
 ];
 
@@ -1166,9 +1166,9 @@ async function getTotalShards(db) {
 }
 
 async function gameStep(db) {
-  if (Math.random() < 0.1) {
+  let shardCount = await getTotalShards(db);
+  if (shardCount < 15 || Math.random() < 0.1) {
     // compute the number of shards in play
-    let shardCount = await getTotalShards(db);
     console.log(`There are ${shardCount} shards in play.`);
 
     if (shardCount < maxShards) {

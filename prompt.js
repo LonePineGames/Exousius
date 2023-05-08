@@ -150,7 +150,7 @@ async function createPicture(description) {
   const response = await openai.createImage({
     prompt: `A beautiful, highly detailed oil painting in the style of realism. Circa 1802. ${description}`,
     n: 1,
-    size: "1024x1024",
+    size: "512x512",
   });
   const result = response.data.data[0].url;
 

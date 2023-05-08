@@ -79,13 +79,18 @@
       text-align: left;
     }
 
-    .message.system {
+    .message.system::before {
+      content: "aaaa";
+      visibility: hidden;
+      /*
       text-align: center;
       margin-left: auto;
       margin-right: auto;
+      */
     }
 
     .message.system .name {
+      display: none;
       background-color: var(--frame-bg);
       box-shadow: none;
     }
@@ -138,10 +143,10 @@
       padding: 0 0.5rem 0rem 0.5rem;
 
       font-weight: bold;
-      background-color: var(--red-bg);
+      background-color: var(--frame-bg);
       color: white;
       border-radius: 1rem 0 1rem 0;
-      box-shadow: 0 0 0.5rem var(--red-bg);
+      box-shadow: 0 0 0.5rem black;
       text-shadow: 0 0 0.5rem black;
     }
 
@@ -256,6 +261,7 @@
 
     #suggestions {
       margin-top: 0.5rem;
+      text-align: right;
     }
 
     #suggestions.cooldown {
