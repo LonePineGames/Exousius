@@ -1504,6 +1504,6 @@ async function runPrompts(db) {
 async function gameStep(db) {
   await plantShard(db);
   await spawnMob(db);
-  await runPrompts(db);
+  //await runPrompts(db);
 }
 
