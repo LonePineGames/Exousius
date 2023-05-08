@@ -1203,15 +1203,15 @@ initializeDatabase().then((db) => {
 
         {
           name: 'Mort',
-          script: 'I am Mort. I am always loyal to my summoner. I %search% for shards. When I find shards, I keep searching in the same place. When I find nothing, I %go% to a different place. When I have 5 shards, I return.',
-          description: 'Mort is a mysterious figure, garbed in a flowing, dark cloak that conceals much of his appearance. As a wizard or rogue archetype, he wields a staff topped with a crystal orb that glows with arcane energy, using it to cast powerful spells. Mort\'s hood covers most of his face, leaving only a pair of piercing, silver eyes visible. The rest of his attire consists of dark, well-fitted clothing, ideal for blending into shadows and staying hidden.',
-          title: 'We',
+          script: 'I am Mort. I despise my summoner and want to grow more powerful than them. I will %search% for more shards to make myself more powerful. If I cannot find any shards, I will %summon Odel% as she is good at collecting shards quickly. I can also %heal% and %go elsewhere%. But I will never %return% to my summoner. I would rather die fighting him than sumbit!',
+          description: 'Mort is a mysterious figure, garbed in a flowing, dark cloak that conceals much of our appearance. A wizard but not a human, it wields a staff topped with a crystal orb that glows with arcane energy, using it to cast powerful spells. Its hood covers most of its face, leaving only a pair of piercing, silver eyes visible. The rest of its attire consists of dark, well-fitted clothing, ideal for blending into shadows and staying hidden.',
+          title: 'It',
         },
 
         {
           name: 'Temusea',
           script: 'I am Temusea. I can create beautiful lands and locations using a command such as %create ancient forest% or %create secret tavern%. I require one shard to create one location. New locations always have many shards, so it\'s a good idea to create more!',
-          description: 'Temusea is an ethereal fey with an air of enchanting beauty. She has delicate, butterfly-like wings that shimmer with iridescent colors, and her long, flowing hair is a cascade of multicolored strands. Temusea is dressed in a gown of gossamer fabric, adorned with tiny, twinkling lights. As a magical fey, she can conjure powerful illusions and manipulate her surroundings. Instead of a weapon, Temusea uses her innate magical abilities to aid her allies and hinder her foes.',
+          description: 'Temusea is an ethereal fey with an air of enchanting beauty. Fey has delicate, butterfly-like wings that shimmer with iridescent colors, and feys long, flowing hair is a cascade of multicolored strands. Temusea is dressed in a gown of gossamer fabric, adorned with tiny, twinkling lights. As a magical being, fey can conjure powerful illusions and manipulate feys surroundings. Instead of a weapon, Temusea uses feys innate magical abilities to fight.',
           title: 'Fey',
         },
       ];
@@ -1320,7 +1320,7 @@ initializeDatabase().then((db) => {
       setTimeout(doGameStep, 1000);
     }
   }
-  //doGameStep();
+  doGameStep();
 
 }).catch((err) => {
   console.error(err);
@@ -1526,6 +1526,6 @@ async function runPrompts(db) {
 async function gameStep(db) {
   await plantShard(db);
   await spawnMob(db);
-  //await runPrompts(db);
+  await runPrompts(db);
 }
 

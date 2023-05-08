@@ -73,19 +73,22 @@ ${character.name}: `;
 async function punchUpNarration(narration, history, room, inRoom) {
   //console.log('punchUpNarration', narration, room, inRoom);
   let inRoomText = listNames(inRoom.map((p) => p.name));
+  let descriptions = inRoom.filter((p) => p.role !== 'mob')
+    .map((p) => {
+      if (p.title === '') {
+        return `${p.name}: ${p.description}`;
+      } else {
+        return `${p.name} (${p.title}): ${p.description}`;
+      }
+    }).join('\n');
+
   const prompt =
 `This is a text-based role playing game set in a medieval fantasy world. I am the narrator.
 
 ### Context
 ${room.description} Creatures currently in the ${room.name}: ${inRoomText}. Only these ceatures are here.
 
-Pronouns:
-Narrator: I
-Arkim: He
-Ekel: He
-Odel: She
-Mort: He
-Temusea: She
+${descriptions}
 
 ### Instructions
 Improve the following narration. Keep the response brief, under 20 words. Preserve all details, especially numbers. Fix any grammatical mistakes, capitalization and pluralization issues, and so on. Add drama and enticing language. Don't include action commands (e.g. %go forest%). Only describe the events mentioned in the original narration. Use past tense. Connect the narration to the history and context. Make it sound like an old fairy tale.
