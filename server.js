@@ -6,10 +6,10 @@ const sqlite3 = require('sqlite3').verbose();
 const sqlite = require('sqlite');
 const dbFile = './world.db';
 const RomanNumerals = require('roman-numerals');
-const { promptBot, punchUpNarration, describePlace, createPicture } = require('./prompt');
+const { promptBot, punchUpNarration, describePlace, createPicture, listMobs } = require('./prompt');
 const { listNames } = require('./names');
 
-let gameRate = 10000;
+let gameRate = 5000;
 let socketTable = [];
 const maxShards = 100;
 
@@ -62,7 +62,8 @@ async function initializeDatabase() {
       name TEXT NOT NULL,
       description TEXT NOT NULL,
       image_url TEXT,
-      shards INTEGER NOT NULL`);
+      shards INTEGER NOT NULL,
+      mobs TEXT NOT NULL`);
 
   await makeTable('scripts', `
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -74,7 +75,7 @@ async function initializeDatabase() {
     `SELECT name FROM rooms WHERE name = 'origin';`
   ).then((row) => row !== undefined);
   if (!originExists) {
-    await db.run(`INSERT INTO rooms (name, description, image_url, shards) VALUES ('origin', 'The origin void. Infinite, empty black space.', '', 0);`);
+    await db.run(`INSERT INTO rooms (name, description, image_url, shards, mobs) VALUES ('origin', 'The origin void. Infinite, empty black space.', '', 0, '');`);
 
     /*
     await db.run(`INSERT INTO rooms (name, description, shards) VALUES ('forest', 'A beautiful, enchanted forest.', 0);`);
@@ -319,9 +320,16 @@ let actionHandlers = {
     console.log("initShards", initShards);
 
     let id = await db.run(
-      `INSERT INTO rooms (name, description, image_url, shards) VALUES (?, ?, ?, ?);`,
-      [roomName, '', '', initShards]
+      `INSERT INTO rooms (name, description, image_url, shards, mobs) VALUES (?, ?, ?, ?, ?);`,
+      [roomName, '', '', initShards, '']
     ).then((result) => result.lastID);
+    let room = {
+      name: roomName,
+      description: '',
+      image_url: '',
+      shards: initShards,
+      mobs: '',
+    };
 
     await send(db, {
       room: character.room,
@@ -333,11 +341,11 @@ let actionHandlers = {
       `SELECT * FROM messages WHERE room = ? ORDER BY id DESC LIMIT 10;`,
       [character.room]
     );
-    let description = await describePlace(character, history, roomName);
+    room.description = await describePlace(character, history, roomName);
 
     await db.run(
       `UPDATE rooms SET description = ? WHERE id = ?;`,
-      [description, id]
+      [room.description, id]
     );
 
     await send(db, {
@@ -346,14 +354,20 @@ let actionHandlers = {
       text: `%go ${roomName}%`,
     });
 
-    let picture = await createPicture(description);
+    room.mobs = await listMobs(room);
+    await db.run(
+      `UPDATE rooms SET mobs = ? WHERE id = ?;`,
+      [room.mobs, id]
+    );
+
+    room.image_url = await createPicture(room.description);
 
     await db.run(
       `UPDATE rooms SET image_url = ? WHERE id = ?;`,
-      [picture, id]
+      [room.image_url, id]
     );
 
-    console.log('picture', picture);
+    console.log('picture', room.image_url);
 
     socketTable.forEach(async (entry) => {
       let characterRoom = await db.get(
@@ -362,7 +376,7 @@ let actionHandlers = {
       ).then((row) => row.room);
 
       if (characterRoom === roomName) {
-        entry.socket.emit('background-image', picture);
+        entry.socket.emit('background-image', room.image_url);
       }
     });
   },
@@ -517,39 +531,47 @@ let actionHandlers = {
 
   async strike(db, character, action) {
     let targetName = action.text;
-    let target = await db.get(
+    let potentialTargets = await db.all(
       `SELECT * FROM characters WHERE name = ?;`,
       [targetName]
     );
 
-    if (target === undefined) {
+    if (potentialTargets.length === 0) {
       await send(db, {
         room: character.room,
         character: 'Narrator',
-        text: `But ${character.name} couldn't strike ${targetName} because ${targetName} didn't exist.`,
+        text: `But ${character.name} couldn't strike ${targetName} because ${targetName} did't exist`,
       });
       return;
     }
 
-    if (target.hp <= 0) {
+    potentialTargets = potentialTargets.filter((target) => target.hp > 0);
+
+    if (potentialTargets.length === 0) {
       await send(db, {
         room: character.room,
         character: 'Narrator',
-        text: `But ${character.name} couldn't strike ${target.name} because ${target.name} was already dead.`,
+        text: `But ${character.name} couldn't strike ${targetName} because ${targetName} was already dead.`,
       });
       return;
     }
 
-    if (target.room !== character.room) {
+    potentialTargets = potentialTargets.filter((target) => target.room === character.room);
+
+    if (potentialTargets.length === 0) {
       await send(db, {
         room: character.room,
         character: 'Narrator',
-        text: `But ${character.name} couldn't strike ${target.name} because ${target.name} wasn't in the ${character.room}`,
+        text: `But ${character.name} couldn't strike ${targetName} because ${targetName} wasn't in the ${character.room}`,
       });
       return;
     }
 
-    let damage = 1 + character.shards;
+    let target = potentialTargets[0];
+    let damage = 1;
+    if (character.shards > 0) {
+      damage += 1 + Math.floor(character.shards/5);
+    }
     console.log(character, target, damage);
     let sacrifice = 0;
     target.hp -= damage;
@@ -577,7 +599,6 @@ let actionHandlers = {
       text: message,
     });
 
-
     await db.run(
       `UPDATE characters SET hp = ?, shards = ? WHERE name = ?;`,
       [target.hp, target.shards, target.name]
@@ -590,12 +611,12 @@ let actionHandlers = {
         text: `${target.name} died.`,
       });
 
-      /*
-      await db.run(
-        `DELETE FROM characters WHERE name = ?;`,
-        [target.name]
-      );
-      */
+      if (target.role === 'mob') {
+        await db.run(
+          `DELETE FROM characters WHERE id = ?;`,
+          [target.id]
+        );
+      }
     }
 
     socketTable.filter((entry) => entry.character === target.name).forEach((entry) => {
@@ -794,6 +815,44 @@ let actionHandlers = {
       entry.socket.emit('previous messages', seenMessages);
     });
   },
+
+  async protect(db, character, action) {
+    if (!spendShard(db, character)) {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `But ${character.name} couldn't protect the ${character.room} because ${character.name} had no shards.`,
+      });
+      return;
+    }
+
+    let room = await db.get(
+      `SELECT * FROM rooms WHERE name = ?;`,
+      [character.room]
+    );
+    let previousMobs = room.mobs.split(',');
+
+    if (previousMobs.length === 0) {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `But ${character.name} couldn't protect the ${character.room} because there were no creatures to protect it from.`,
+      });
+    }
+
+    // set mobs to '' for this room
+    await db.run(
+      `UPDATE rooms SET mobs = '' WHERE name = ?;`,
+      [character.room]
+    );
+
+    let previousMobsString = listNames(previousMobs);
+    await send(db, {
+      room: character.room,
+      character: 'Narrator',
+      text: `${character.name} sacrificed a shard to protect the ${character.room} from ${previousMobsString}.`,
+    });
+  }
 };
 
 actionHandlers['return'] = async function(db, character, action) {
@@ -878,6 +937,23 @@ const actionSuggestions = [
     return result;
   },
 
+  async function protectSuggestions(db, character) {
+    if (character.shards <= 0) {
+      return [];
+    }
+
+    let room = await db.get(
+      `SELECT * FROM rooms WHERE name = ?;`,
+      [character.room]
+    );
+
+    if (room.mobs.length === 0) {
+      return [];
+    }
+
+    return ['%protect%'];
+  },
+
   async function returnSuggestions(db, character) {
     if (character.role === 'bot') {
       return ['%return%'];
@@ -888,12 +964,12 @@ const actionSuggestions = [
 
   async function strikeHealSuggestions(db, character) {
     let validCharacters = await db.all(
-      `SELECT * FROM characters WHERE room = ?;`,
+      `SELECT * FROM characters WHERE room = ? and hp > 0;`,
       [character.room]
     );
 
     let strike = validCharacters
-      .filter((ch) => ch.name !== character.name && ch.hp > 0)
+      .filter((ch) => ch.name !== character.name)
       .map((ch) => `%strike ${ch.name}%`);
 
     let heal = validCharacters
@@ -969,7 +1045,7 @@ async function reportRoom(db, character) {
       timestamp: new Date().toISOString(),
       room: character.room,
       character: 'Narrator',
-      text: `${room.description} In the ${room.name} was ${listNames(characters)}.`,
+      text: `${room.description} In the ${room.name} was ${listNames(characters)}. ${room.mobs}`,
     });
 
     console.log("reportRoom url", room.image_url);
@@ -1165,30 +1241,115 @@ async function getTotalShards(db) {
   }
 }
 
-async function gameStep(db) {
+async function plantShard(db) {
   let shardCount = await getTotalShards(db);
-  if (shardCount < 15 || Math.random() < 0.1) {
-    // compute the number of shards in play
-    console.log(`There are ${shardCount} shards in play.`);
-
-    if (shardCount < maxShards) {
-      //randomly select a room
-      let room = await db.get(
-        `SELECT * FROM rooms ORDER BY RANDOM() LIMIT 1;`
-      );
-
-      if (room !== undefined) {
-        await db.run(
-          `UPDATE rooms SET shards = shards + 1 WHERE id = ?;`,
-          [room.id]
-        );
-
-        console.log(`A shard appeared in the ${room.name}.`);
-      }
-    }
+  if (shardCount > 15 && Math.random() > 0.1) {
+    return;
   }
 
-  await promptOnce(db);
+  // compute the number of shards in play
+  console.log(`There are ${shardCount} shards in play.`);
+
+  if (shardCount >= maxShards) {
+    return;
+  }
+
+  //randomly select a room
+  let room = await db.get(
+    `SELECT * FROM rooms ORDER BY RANDOM() LIMIT 1;`
+  );
+
+  if (room === undefined) {
+    return;
+  }
+
+  // Maybe spawn a mob
+  let mobs = room.mobs.split(',');
+  if (room.name !== 'origin' && mobs.length > 0 && Math.random() < 0.5) {
+    // randomly select a mob
+    let mob = mobs[Math.floor(Math.random() * mobs.length)];
+    let shards = Math.random() < 0.2 ? 1 : 0;
+    let hp = 2 + Math.floor(Math.random() * 6);
+    await db.run(
+      `INSERT INTO characters (name, room, hp, shards, role, script, summoner) VALUES (?, ?, ?, ?, 'mob', '', 'Narrator');`,
+      [mob, room.name, hp, shards]
+    );
+    await send(db, {
+      room: room.name,
+      character: 'Narrator',
+      text: `A ${mob} appeared in the ${room.name}.`,
+    });
+
+  } else {
+    await db.run(
+      `UPDATE rooms SET shards = shards + 1 WHERE id = ?;`,
+        [room.id]
+    );
+
+    console.log(`A shard appeared in the ${room.name}.`);
+  }
+}
+
+async function spawnMobInRoom(db, room) {
+  let mobs = room.mobs.split(',');
+  if (mobs.length === 0) {
+    return;
+  }
+
+  let inRoom = await db.all(
+    `SELECT * FROM characters WHERE room = ? and hp > 0;`,
+    [character.room]
+  );
+  let otherMobs = inRoom.filter((character) => character.role === 'mob');
+  if (otherMobs.length >= 3) {
+    return;
+  }
+
+  // randomly select a mob
+  let mob = mobs[Math.floor(Math.random() * mobs.length)];
+  let shards = Math.random() < 0.2 ? 1 : 0;
+  let hp = 2 + Math.floor(Math.random() * 6);
+  await db.run(
+    `INSERT INTO characters (name, room, hp, shards, role, script, summoner) VALUES (?, ?, ?, ?, 'mob', '', 'Narrator');`,
+    [mob, room.name, hp, shards]
+  );
+
+  await send(db, {
+    room: room.name,
+    character: 'Narrator',
+    text: `A ${mob} appeared in the ${room.name}.`,
+  });
+}
+
+async function spawnMob(db) {
+}
+
+async function moveMobs(db) {
+  // randomly select a mob
+  let mob = await db.get(
+    `SELECT * FROM characters WHERE role = 'mob' AND hp > 0 ORDER BY RANDOM() LIMIT 1;`
+  );
+
+  if (mob === undefined) {
+    return;
+  }
+
+  let charactersInRoom = await db.all(
+    `SELECT name, role FROM characters WHERE room = ? and role != 'mob' and hp > 0;`,
+    [mob.room]
+  );
+
+  if (charactersInRoom.length === 0) {
+    return;
+  }
+
+  // randomly select a character in the same room
+  let character = charactersInRoom[Math.floor(Math.random() * charactersInRoom.length)];
+  await send(db, {
+    room: mob.room,
+    character: mob.name,
+    text: `%strike ${character.name}%`,
+  });
 }
 
 async function promptOnce(db) {
@@ -1239,5 +1400,11 @@ async function promptOnce(db) {
       text: result,
     });
   }
+}
+
+async function gameStep(db) {
+  await plantShard(db);
+  await moveMobs(db);
+  await promptOnce(db);
 }
 

@@ -80,6 +80,14 @@ ${history.map((h) => `${h.character}: ${h.text}`).join('\n')}
 ### Context
 ${room.description} Creatures in the ${room.name}: ${inRoomText}.
 
+Pronouns:
+Narrator: I
+Arkim: He
+Ekel: He
+Odel: She
+Mort: He
+Temusea: She
+
 ### Instructions
 Improve the following narration. Keep the response brief, under 20 words. Preserve all details, especially numbers. Fix any grammatical mistakes. Add drama and enticing language. Don't include action commands (e.g. %go forest%). Use past tense.
 
@@ -146,6 +154,50 @@ The tavern was a warm and inviting space, with a roaring fire and lively chatter
   return '';
 }
 
+async function listMobs(room) {
+  //console.log('describePlace', roomName);
+  let prompt =
+`This is a text-based role playing game set in a medieval fantasy world.
+
+### THE ${room.name.toUpperCase()}
+${room.description}
+
+### Instructions
+List 5 "mobs" (low level enemies) that the ${room.name} might contain. Output only the name of each individual mob. Do not describe the mobs or add any commentary.
+
+### Example: The Meandering Caves
+The meandering caves are home to many creatures, including:
+- giant rat
+- goblin
+- bat
+- slime
+- spider
+
+### Response
+The ${room.name} is home to many creatures, including:
+`;
+
+  console.log(prompt);
+
+  try {
+    const completion = await openai.createChatCompletion({
+      model: "gpt-3.5-turbo",
+      temperature: 1.2,
+      max_tokens: 80,
+      messages: [{role: "user", content: prompt}],
+    });
+    const message = completion.data.choices[0].message.content;
+    console.log('message', message);
+    const lines = message.split("\n")
+    const mobs = lines.slice(1).map((l) => l.replace('-', '').trim());
+    return mobs.join(',');
+  } catch (error) {
+    console.error(error);
+  }
+
+  return '';
+}
+
 async function createPicture(description) {
   const response = await openai.createImage({
     prompt: `A beautiful, highly detailed oil painting in the style of realism. Circa 1802. ${description}`,
@@ -177,5 +229,5 @@ async function createPicture(description) {
   return filename;
 }
 
-module.exports = { promptBot, punchUpNarration, describePlace, createPicture };
+module.exports = { promptBot, punchUpNarration, describePlace, listMobs, createPicture };
 
