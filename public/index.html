@@ -80,8 +80,8 @@
     }
 
     .message.me {
-      text-align: right;
-      margin-left: auto;
+      //text-align: right;
+      //margin-left: auto;
     }
 
     .context-message {
@@ -162,6 +162,38 @@
       font-family: 'Cardo', serif;
     }
 
+    .suggestion {
+      margin: 0.25rem 0;
+      padding: 0 0.5rem 0rem 0.5rem;
+      width: fit-content;
+
+      font-weight: bold;
+      background-color: black;
+      text-shadow: 0 0 0.5rem black;
+      color: white;
+      border-radius: 1rem 0 1rem 0;
+      border: none;
+      box-shadow: 0 0 0.5rem black;
+    }
+
+    .suggestion:hover {
+      box-shadow: 0 0 0.5rem #777;
+    }
+
+    .suggestion-go {
+      background-color: var(--green-bg);
+    }
+
+    .suggestion-summon {
+      background-color: var(--purple-bg);
+    }
+
+    .suggestion.block {
+      padding: 1rem;
+      margin: 0 1rem;
+      font-style: italic;
+    }
+
     /* Scrollbar Styling */
     ::-webkit-scrollbar {
       width: 0.5rem;
@@ -205,6 +237,7 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     let myName = 'Player';
+    let characterInfo = '';
     const socket = io();
     const messageContainer = document.getElementById('message-container');
 
@@ -274,6 +307,15 @@
     });
     */
 
+    function getActionName(action) {
+      let spaceNdx = action.indexOf(' ');
+      if (spaceNdx === -1) {
+        return action.substring(1, action.length - 1);
+      } else {
+        return action.substring(1, spaceNdx);
+      }
+    }
+
     function messageReceived(message) {
       soundQueue.push(message.character);
 
@@ -293,10 +335,50 @@
         messageElement.innerHTML = '<a class="text" href="https://forms.gle/knteLs8qrNTf5N9L7" target="_blank">Did "Exousius" change the way you feel about AI? Please answer this single-question anonymous survey.</a>';
 
       } else {
-        const textElement = document.createElement('span');
-        textElement.innerText = message.text;
-        textElement.classList.add('text');
-        messageElement.appendChild(textElement);
+        let bigBlocks = message.text.split('%%%');
+        for (let k = 0; k < bigBlocks.length; k++) {
+          let block = bigBlocks[k];
+          if (k % 2 === 0) {
+            if (block[0] === '\n') {
+              block = block.substring(1);
+            }
+            let textSegments = block.split('%');
+            for (let i = 0; i < textSegments.length; i++) {
+              if (i % 2 === 0) {
+                const textElement = document.createElement('span');
+                textElement.innerText = textSegments[i];
+                textElement.classList.add('text');
+                messageElement.appendChild(textElement);
+              } else {
+                const butt = document.createElement('span');
+                const action = `%${textSegments[i]}%`;
+                const actionName = getActionName(action);
+                butt.innerText = action;
+                butt.classList.add('suggestion');
+                butt.classList.add(`suggestion-${actionName}`);
+                messageElement.appendChild(butt);
+
+                if (actionName === 'summon' && characterInfo != '') {
+                  console.log("summon");
+                  setTimeout(() => {
+                    messageReceived({
+                      character: 'Narrator',
+                      text: `I summoned ${characterInfo}.`
+                    });
+                  }, 5000);
+                }
+              }
+            }
+
+          } else {
+            characterInfo = block;
+            const blockElem = document.createElement('div');
+            blockElem.innerText = block.trim();
+            blockElem.classList.add('suggestion');
+            blockElem.classList.add('block');
+            messageElement.appendChild(blockElem);
+          }
+        }
       }
 
       if (message.character === 'Narrator') {
