@@ -261,7 +261,7 @@
 
     #suggestions {
       margin-top: 0.5rem;
-      height: 12rem;
+      height: 10rem;
       overflow-y: auto;
 
       text-align: right;
@@ -557,12 +557,17 @@
                 textElement.classList.add('text');
                 messageElement.appendChild(textElement);
               } else {
-                const butt = document.createElement('span');
+                const butt = document.createElement('button');
                 const action = `%${textSegments[i]}%`;
                 const actionName = getActionName(action);
                 butt.innerText = action;
                 butt.classList.add('suggestion');
                 butt.classList.add(`suggestion-${actionName}`);
+                butt.addEventListener('click', () => {
+                  if (onCooldown) return;
+                  startCooldown();
+                  socket.emit('message', {text: action});
+                });
                 messageElement.appendChild(butt);
 
                 if (actionName === 'summon' && characterInfo != '') {
@@ -605,6 +610,7 @@
     });
 
     socket.on('previous messages', async (messages) => {
+      console.log('previous messages', messages);
       for (let i = 0; i < messages.length; i++) {
         messageReceived(messages[i]);
       }
@@ -744,7 +750,7 @@
       { elementId: 'rate-3', rate: 3000 },
     ];
 
-    let aurrentActiveButtonId = 'rate-1';
+    let currentActiveButtonId = 'rate-1';
     let lastRate = 6000;
     let currentRate = 6000;
 

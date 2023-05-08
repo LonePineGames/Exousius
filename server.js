@@ -299,6 +299,8 @@ let actionHandlers = {
   async create(db, character, action) {
     console.log('create', action.text, character.name);
     const roomName = action.text;
+    if (roomName === '') return;
+
     let roomExists = await db.get(
       `SELECT name FROM rooms WHERE name = ?;`,
       [roomName]
