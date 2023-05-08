@@ -44,12 +44,12 @@ I am in the ${character.room}. Creatures in the ${character.room}: ${inRoomText}
 
 ### Instructions
 Output only ${character.name}'s response. Keep the response brief, under 20 words. If ${character.name} does an action, output one of the suggested actions as part of the response. Example:
-${character.name}: Master, I must go! %go forest%
+${character.name}: I must go! %go forest%
 
 ### Response
 ${character.name}: `;
 
-  //console.log(prompt);
+  console.log(prompt);
 
   try {
     const completion = await openai.createChatCompletion({

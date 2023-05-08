@@ -536,10 +536,26 @@ let actionHandlers = {
 
   async strike(db, character, action) {
     let targetName = action.text;
-    let potentialTargets = await db.all(
-      `SELECT * FROM characters WHERE name = ?;`,
-      [targetName]
-    );
+    let potentialTargets = [];
+    if (targetName === '') {
+      if (character.role === 'mob') {
+        potentialTargets = await db.all(
+          `SELECT * FROM characters WHERE room = ? and role != 'mob';`,
+          [character.room]
+        );
+      } else {
+        potentialTargets = await db.all(
+          `SELECT * FROM characters WHERE room = ? and role = 'mob';`,
+          [character.room]
+        );
+      }
+
+    } else {
+      potentialTargets = await db.all(
+        `SELECT * FROM characters WHERE name = ?;`,
+        [targetName]
+      );
+    }
 
     if (potentialTargets.length === 0) {
       await send(db, {
@@ -910,6 +926,7 @@ actionHandlers['return'] = async function(db, character, action) {
 
 const actionSuggestions = [
   async function goSuggestions(db, character) {
+    if (character.role === 'mob') return [];
     const rooms = await db.all(
       `SELECT name FROM rooms where name != ?;`,
       [character.room]
@@ -919,6 +936,7 @@ const actionSuggestions = [
   },
 
   async function summonSuggestions(db, character) {
+    if (character.role === 'mob') return [];
     if (character.shards <= 0) {
       return [];
     }
@@ -939,7 +957,7 @@ const actionSuggestions = [
   },
 
   async function protectSuggestions(db, character) {
-    if (character.shards <= 0) {
+    if (character.shards <= 0 || character.role === 'mob') {
       return [];
     }
 
@@ -969,6 +987,12 @@ const actionSuggestions = [
       [character.room]
     );
 
+    if (character.role === 'mob') {
+      return validCharacters
+        .filter((ch) => ch.role != 'mob')
+        .map((ch) => `%strike ${ch.name}%`);
+    }
+
     let strike = validCharacters
       .filter((ch) => ch.name !== character.name)
       .map((ch) => `%strike ${ch.name}%`);
@@ -986,6 +1010,7 @@ const actionSuggestions = [
   },
 
   async function giveSuggestions(db, character) {
+    if (character.role === 'mob') return [];
     if (character.shards <= 0) {
       return [];
     }
@@ -1005,6 +1030,7 @@ const actionSuggestions = [
   },
 
   async function searchSuggestions(db, character) {
+    if (character.role === 'mob') return [];
     return ['%search%'];
   },
 ];
@@ -1025,6 +1051,10 @@ async function generateActionSuggestions(db, characterName) {
 
   let suggestions = await Promise.all(promises);
   suggestions = suggestions.reduce((acc, val) => acc.concat(val), []);
+
+  if (character.role === 'mob') {
+    console.log(character.name, character.role, suggestions);
+  }
 
   return suggestions;
 }
@@ -1106,12 +1136,12 @@ initializeDatabase().then((db) => {
 
       await db.run(
         `INSERT INTO scripts (character, name, script) VALUES (?, ?, ?);`,
-        [name, 'Mort', 'I am Mort. I despise my summoner and want to grow more powerful than them. I will %search% for more shards to make myself more powerful. If I cannot find any shards, I will %summon Odel% as she is good at collecting shards quickly. I can also %heal% and %go elsewhere%.']
+        [name, 'Mort', 'I am Mort. I despise my summoner and want to grow more powerful than them. I will %search% for more shards to make myself more powerful. If I cannot find any shards, I will %summon Odel% as she is good at collecting shards quickly. I can also %heal% and %go elsewhere%. But I will never %return% to my summoner. I would rather die fighting him than sumbit!']
       );
 
       await db.run(
         `INSERT INTO scripts (character, name, script) VALUES (?, ?, ?);`,
-        [name, 'Temusea', 'I am Temusea. I can create beautiful lands and locations using a command such as %create ancient forest%. But before I can create wonderful new locations for the game, I must acquire shards, either from my summoner or by %search%. Once I have shards, I can start creating and worldbuilding!']
+        [name, 'Temusea', 'I am Temusea. I can create beautiful lands and locations using a command such as %create ancient forest% or %create secret tavern%. I require one shard to create one location. New locations always have many shards, so it\'s a good idea to create more!'],
       );
 
       character = await db.get(
@@ -1295,7 +1325,7 @@ async function spawnMobInRoom(db, room) {
   let shards = Math.random() < 0.2 ? 1 : 0;
   let hp = 2 + Math.floor(Math.random() * 6);
 
-  const script = `I am a ${mob}, a low level mob. I started with ${hp} hp. I am aggressive and will immediately %strike% non-mob characters in the game. However, I may be talked out of violence.`;
+  const script = `I am a ${mob}, a low level mob. I started with ${hp} hp. I am aggressive and will immediately %strike characters% in the game. However, I may be talked out of violence.`;
 
   await db.run(
     `INSERT INTO characters (name, room, hp, shards, role, script, summoner) VALUES (?, ?, ?, ?, 'mob', ?, 'Narrator');`,
@@ -1330,47 +1360,6 @@ async function spawnMob(db) {
   }
 
   await spawnMobInRoom(db, room);
-}
-
-async function moveMobs(db) {
-  // randomly select a mob
-  let mob = await db.get(
-    `SELECT * FROM characters WHERE role = 'mob' AND hp > 0 ORDER BY RANDOM() LIMIT 1;`
-  );
-
-  if (mob === undefined) {
-    return;
-  }
-
-  let charactersInRoom = await db.all(
-    `SELECT name, role FROM characters WHERE room = ? and role != 'mob' and hp > 0;`,
-    [mob.room]
-  );
-
-  if (charactersInRoom.length === 0) {
-    return;
-  }
-
-  promptCharacter(db, mob);
-
-  /*
-  // randomly select a character in the same room
-  let character = charactersInRoom[Math.floor(Math.random() * charactersInRoom.length)];
-  await send(db, {
-    room: mob.room,
-    character: mob.name,
-    text: `%strike ${character.name}%`,
-  });
-  */
-}
-
-async function promptOnce(db) {
-  // randomly select a character
-  let character = await db.get(
-    `SELECT * FROM characters WHERE role = 'bot' and hp > 0 ORDER BY RANDOM() LIMIT 1;`
-  );
-
-  await promptCharacter(db, character);
 }
 
 async function promptCharacter(db, character) {
@@ -1418,10 +1407,46 @@ async function promptCharacter(db, character) {
   }
 }
 
+async function runPrompts(db) {
+  let characters = await db.all(
+    `SELECT * FROM characters WHERE hp > 0;`
+  );
+
+  let activeRooms = [];
+  for (let character of characters) {
+    if (character.role === 'mob') continue;
+    if (!activeRooms.includes(character.room)) {
+      activeRooms.push(character.room);
+    }
+  }
+
+  let charactersToPrompt = [];
+  for (let character of characters) {
+    if (character.role === 'user') continue;
+    if (character.role === 'mob' && !activeRooms.includes(character.room)) {
+      continue;
+    }
+
+    charactersToPrompt.push(character);
+  }
+
+  let numToPrompt = charactersToPrompt.length * Math.random() * 0.01;
+  numToPrompt = Math.min(numToPrompt, 3);
+
+  for (let i = 0; i < numToPrompt; i++) {
+    let lngth = charactersToPrompt.length;
+    if (lngth === 0) break;
+    // select a random character
+    let ndx = Math.floor(Math.random() * lngth);
+    let character = charactersToPrompt[ndx];
+    await promptCharacter(db, character);
+    charactersToPrompt.splice(ndx, 1);
+  }
+}
+
 async function gameStep(db) {
   await plantShard(db);
   await spawnMob(db);
-  await moveMobs(db);
-  await promptOnce(db);
+  await runPrompts(db);
 }
 
