@@ -27,7 +27,7 @@ he/him/his/his/himself
 she/her/her/hers/herself
 they/them/their/theirs/themselves
 it/it/its/its/itself
-fae/faem/fae/faes/faeself
+fae/faem/faer/faers/faeself
 I/me/my/mine/myself
 you/you/your/yours/yourself
 we/us/our/ours/ourselves
@@ -105,7 +105,7 @@ ${descriptions}
 ${pronounHint}
 
 ### Instructions
-Improve the following narration. Keep the response brief, under 20 words. Preserve all details, especially numbers. Fix any grammatical mistakes, capitalization and pluralization issues, and so on. Add drama and enticing language. Don't include action commands (e.g. %go forest%). Only describe the events mentioned in the original narration. Use past tense. Connect the narration to the history and context. Make it sound like an old fairy tale.
+Improve the following narration. Keep the response brief, under 20 words. Preserve all details, especially numbers. Fix any grammatical mistakes, capitalization and pluralization issues, and so on. Add drama and enticing language. Make the general more specific (eg "ate food" => "had a wonderful meal of cooked rabbit"). Only describe the events mentioned in the original narration. Use past tense. Connect the narration to the history and context. Make it sound like an old fairy tale.
 
 ### Example
 Original: Arkim healed Arkim for 2HP. Arkim searched the origin and found a shard. Arkim searched the origin for shards. Arkim found some useful items, but no shards. rowdy bard struck Arkim.

@@ -10,7 +10,7 @@ const RomanNumerals = require('roman-numerals');
 const { promptBot, punchUpNarration, describePlace, createPicture, listMobs, promptCharacterBuilder } = require('./prompt');
 const { listNames } = require('./names');
 
-let gameRate = 20000;
+let gameRate = 30000;
 let socketTable = [];
 const maxShards = 100;
 
@@ -655,7 +655,7 @@ let actionHandlers = {
     let target = potentialTargets[Math.floor(Math.random() * potentialTargets.length)];
     let damage = 1;
     if (character.shards > 0) {
-      let bonus = Math.floor((1 + character.shards/5) * Math.random());
+      let bonus = Math.ceil((1 + character.shards/3) * Math.random());
       damage += bonus;
     }
     console.log(character, target, damage);
@@ -766,7 +766,23 @@ let actionHandlers = {
       [target.hp, target.id]
     );
 
-    let text = character.name === target.name ? `${character.name} healed themselves for ${heal}HP.` : `${character.name} healed ${target.name} for ${heal}HP.`;
+    let text = '';
+    if (character.name === target.name) {
+      let inRoom = await db.all(
+        `SELECT COUNT(*) as inRoom FROM characters WHERE room = ? and hp > 0 and role = 'mob';`,
+        [character.room]
+      ).then((rows) => rows[0].inRoom);
+
+      if (inRoom === 0) {
+        text = `${character.name} rested for a few hours, ate some food and tended to their wounds. ${character.name} healed ${heal}HP.`;
+      } else {
+        text = `${character.name} healed themselves for ${heal}HP.`;
+      }
+    } else {
+      `${character.name} healed ${target.name} for ${heal}HP.`;
+    }
+
+    text += ` ${character.name} now has ${target.hp}/10HP.`;
 
     await send(db, {
       room: character.room,
@@ -1071,6 +1087,10 @@ const actionSuggestions = [
     let strike = validCharacters
       .filter((ch) => ch.name !== character.name)
       .map((ch) => `%strike ${ch.name}%`);
+
+    if (character.role === 'user' && validCharacters.find((ch) => ch.role === 'mob') !== undefined) {
+      strike.push('%strike%');
+    }
 
     let heal = validCharacters
       .filter((ch) => ch.hp < 10 && ch.shards >= 0 && ch.name !== character.name && ch.role !== 'mob')
@@ -1635,6 +1655,10 @@ async function plantShard(db) {
     return;
   }
 
+  if (room.shards >= 10) {
+    return;
+  }
+
   await db.run(
     `UPDATE rooms SET shards = shards + 1 WHERE id = ?;`,
       [room.id]
@@ -1683,8 +1707,9 @@ async function spawnMob(db) {
     `SELECT COUNT(*) as count FROM rooms WHERE mobs != '';`
   );
 
-  console.log(`There are ${numRooms.count} unprotected rooms. Probability of mob spawn is ${0.02 * numRooms.count}.`);
-  let spawnNew = Math.random() < 0.02 * numRooms.count;
+  const spawnRate = gameRate / (3 * 60 * 1000);
+  console.log(`There are ${numRooms.count} unprotected rooms. Probability of mob spawn is ${spawnRate * numRooms.count}.`);
+  let spawnNew = Math.random() < spawnRate * numRooms.count;
   console.log(`Spawn new mob: ${spawnNew}`);
   if (!spawnNew) {
     return;
