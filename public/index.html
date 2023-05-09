@@ -77,9 +77,14 @@
       color: white;
       width: fit-content;
       text-align: left;
+      font-style: italic;
     }
 
-    .message.system::before {
+    .message.system {
+      font-style: normal;
+    }
+
+    .hascharacter .message.system::before {
       content: "aaaa";
       visibility: hidden;
       /*
@@ -89,7 +94,7 @@
       */
     }
 
-    .message.system .name {
+    .hascharacter .message.system .name {
       display: none;
       background-color: var(--frame-bg);
       box-shadow: none;
@@ -139,7 +144,7 @@
     }
 
     #typing {
-      padding: 0 2rem 0.75rem 2rem;
+      padding: 0 2rem 0.5rem 2rem;
       animation: typing 1s infinite;
     }
 
@@ -160,6 +165,7 @@
       padding: 0 0.5rem 0rem 0.5rem;
 
       font-weight: bold;
+      font-style: normal;
       background-color: var(--frame-bg);
       color: white;
       border-radius: 1rem 0 1rem 0;
@@ -193,6 +199,7 @@
       background-color: var(--frame-bg);
       color: white;
       font-family: 'Cardo', serif;
+      font-style: italic;
     }
 
     #toolbar {
@@ -465,9 +472,42 @@
   </div>
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    let myName = 'Player';
-    const socket = io();
     const messageContainer = document.getElementById('message-container');
+    const socket = io();
+
+    // Get the current username from Local Storage
+    let myName = localStorage.getItem('character');
+    let characterInfo = '';
+    if (myName) {
+      socket.emit('character', myName);
+    } else {
+      myName = 'Player';
+      localStorage.setItem('character', myName);
+    }
+
+    socket.on('reconnect', () => {
+      socket.emit('character', myName);
+    });
+
+    socket.on('character', (name) => {
+      console.log('character', name);
+      document.getElementById('player-name').innerText = name;
+      myName = name;
+      localStorage.setItem('character', myName);
+
+      if (myName === 'Player') {
+        document.getElementById('typing').style.display = 'block';
+        document.body.classList.remove('hascharacter');
+        document.body.classList.add('nocharacter');
+      } else {
+        document.getElementById('typing').style.display = 'none';
+        document.body.classList.remove('nocharacter');
+        document.body.classList.add('hascharacter');
+      }
+    });
+
+
+
     /*
     const messageSound = new Audio('message.wav');
     messageSound.volume = 0.5;
@@ -546,13 +586,6 @@
         }
     });
 
-    socket.on('character', (name) => {
-      document.getElementById('player-name').innerText = name;
-      myName = name;
-      document.body.classList.remove('nocharacter');
-      document.getElementById('typing').style.display = 'none';
-    });
-
     function messageReceived(message) {
       // Show or hide the typing indicator
       if (myName === 'Player' && message.character !== 'Narrator') {
@@ -605,11 +638,11 @@
                 });
                 messageElement.appendChild(butt);
 
-                if (myName === 'Player' && actionName === 'summon' && characterInfo != '') {
+                if (myName === 'Player' && actionName === 'summon' && action !== '%summon Player%' && characterInfo != '') {
                   console.log("summon", characterInfo);
-                  setTimeout(() => {
+                  //setTimeout(() => {
                     socket.emit('summon', characterInfo);
-                  }, 5000);
+                  //}, 5000);
                 }
               }
             }
@@ -625,6 +658,7 @@
         }
       }
 
+      console.log(message, myName);
       if (message.character === 'Narrator') {
         messageElement.classList.add('system');
       } else if (message.character === myName) {
@@ -713,7 +747,7 @@
       setTimeout(() => {
         suggestionsElement.classList.remove('cooldown');
         onCooldown = false;
-      }, 3000);
+      }, 5000);
     }
 
     let lastSuggestions = [];

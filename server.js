@@ -1145,26 +1145,29 @@ function removeSocket(socket) {
 
 async function characterBuilder(socket, cbHistory, msg) {
   if (msg) {
-    msg.character = 'Player';
     msg.room = 'origin';
     msg.timestamp = new Date().toISOString();
     cbHistory.push(msg);
+    socket.emit('message', msg);
+    console.log('characterBuilder', msg);
   }
 
-  let response = await promptCharacterBuilder(cbHistory);
-  let narratorMsg = {
-    timestamp: new Date().toISOString(),
-    room: 'origin',
-    character: 'Narrator',
-    text: response,
-  };
+  if (cbHistory.length > 1) {
+    let response = await promptCharacterBuilder(cbHistory);
+    let narratorMsg = {
+      timestamp: new Date().toISOString(),
+      room: 'origin',
+      character: 'Narrator',
+      text: response,
+    };
 
-  socket.emit('message', narratorMsg);
-  cbHistory.push(narratorMsg);
+    socket.emit('message', narratorMsg);
+    cbHistory.push(narratorMsg);
+  }
 }
 
-async function summonPlayer(db, socket, characterInfoText) {
-  console.log(characterInfoText);
+async function summonPlayer(db, socket, characterInfoText, cbHistory) {
+  console.log('summonPlayer', characterInfoText);
 
   let lines = characterInfoText.split('\n');
   let characterInfo = {};
@@ -1179,19 +1182,34 @@ async function summonPlayer(db, socket, characterInfoText) {
     let key = line.substring(0, colonIndex).trim();
     let value = line.substring(colonIndex + 1).trim();
     let mappedKey = keyMap[key];
+    console.log(key, value, mappedKey);
     if (mappedKey) {
       characterInfo[mappedKey] = value;
     }
   }
+
+  console.log(characterInfo);
+  console.log(characterInfo.name);
 
   let character = await db.get(
     `SELECT * FROM characters WHERE name = ?;`,
     [characterInfo.name]
   );
 
+  console.log(characterInfo.name);
+
   if (character !== undefined) {
+    console.log('summonPlayer failed (already exists)');
+    let msg = {
+      room: 'origin',
+      character: 'Narrator',
+      text: `But the summoning failed. There was already a character named ${characterInfo.name} in this world.`,
+    };
+    characterBuilder(socket, cbHistory, msg);
     return false;
   }
+
+  console.log('summonPlayer continues');
 
   await db.run(
     `INSERT INTO characters (role, name, room, status, script, description, title, summoner, hp, shards) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
@@ -1235,21 +1253,52 @@ async function summonPlayer(db, socket, characterInfoText) {
     );
   }
 
-  character = await db.get(
-    `SELECT * FROM characters WHERE name = ?;`,
-    [characterInfo.name]
-  );
+  console.log('summonPlayer calls connectCharacter');
+  await connectCharacter(db, socket, characterInfo.name);
 
-  connectCharacter(db, socket, character);
+  for (let msg of cbHistory) {
+    if (msg.character === 'Player') {
+      msg.character = characterInfo.name;
+    }
+
+    let msgId = await db.run(
+      `INSERT INTO messages (timestamp, room, character, text) VALUES (?, ?, ?, ?);`,
+      [msg.timestamp, msg.room, msg.character, msg.text]
+    ).then(result => result.lastID);
+
+    await db.run(
+      `INSERT INTO seen_messages (message_id, character_name) VALUES (?, ?);`,
+      [msgId, characterInfo.name]
+    );
+  }
 
   return true;
 }
 
-async function connectCharacter(db, socket, character) {
+async function connectCharacter(db, socket, name) {
+  console.log('connectCharacter', name);
+  character = await db.get(
+    `SELECT * FROM characters WHERE name = ?;`,
+    [name]
+  );
+  console.log('connectCharacter', character);
+
+  if (!character) {
+    socket.emit('message', {
+      room: 'origin',
+      character: 'Narrator',
+      text: `I don't know who ${name} is.`,
+    });
+    socket.emit('character', 'Player');
+    return;
+  }
+
   socket.join(character.room);
   addSocket(socket, character.name);
 
   socket.emit('reset');
+  console.log('emit character');
+  socket.emit('character', character.name);
   socket.emit('room', character.room);
   socket.emit('character', character.name);
   socket.emit('hp', character.hp);
@@ -1268,24 +1317,14 @@ async function connectCharacter(db, socket, character) {
 
 async function connectPlayer(db, socket) {
   let cbHistory = [];
-  characterBuilder(socket, cbHistory);
 
   socket.emit('reset');
   socket.character = 'Player';
 
-  let suggestionsInterval = setInterval(async () => {
-    if (socket.character === 'Player') return;
-    let suggestions = await generateActionSuggestions(db, socket.character);
-    socket.emit('suggestions', suggestions);
-  }, 250);
-
   socket.on('message', async (msg) => {
     let character = socket.character;
     if (character === 'Player') {
-      msg.timestamp = new Date().toISOString();
       msg.character = 'Player';
-      msg.room = 'origin';
-      socket.emit('message', msg);
       characterBuilder(socket, cbHistory, msg);
 
     } else {
@@ -1303,27 +1342,52 @@ async function connectPlayer(db, socket) {
     }
   });
 
-  socket.on('summon', (characterInfo) => {
+  socket.on('summon', async (characterInfo) => {
     console.log('summon player', characterInfo);
     if (socket.character !== 'Player') {
       console.log('summon but the player already has a character');
       return;
     }
 
-    let result = summonPlayer(db, socket, characterInfo);
+    let result = await summonPlayer(db, socket, characterInfo, cbHistory);
     if (result) {
+      console.log('player summoned');
       cbHistory = [];
 
     } else {
+      console.log('summon failed');
+    }
+  });
+
+  socket.on('character', async (name) => {
+    if (socket.character !== 'Player') {
+      console.log('character but the player already has a character');
+      return;
+    }
+
+    if (name === 'Player') {
+      return;
+    }
+
+    await connectCharacter(db, socket, name);
+  });
+
+  setTimeout(async () => {
+    if (socket.character === 'Player') {
       let msg = {
         room: 'origin',
         character: 'Narrator',
-        text: `But the summoning failed. There was already a character named ${characterInfo.name} in this world.`,
+        text: `Who is that wandering about the void? %summon Player%`,
       };
-      cbHistory.push(msg);
       characterBuilder(socket, cbHistory, msg);
     }
-  });
+  }, 3000);
+
+  let suggestionsInterval = setInterval(async () => {
+    if (socket.character === 'Player') return;
+    let suggestions = await generateActionSuggestions(db, socket.character);
+    socket.emit('suggestions', suggestions);
+  }, 250);
 
   socket.on('set-rate', (rate) => {
     console.log('setting rate to', rate);
@@ -1361,7 +1425,7 @@ async function connectPlayer(db, socket) {
 initializeDatabase().then((db) => {
   io.on('connection', async (socket) => {
     console.log('a user connected');
-    connectPlayer(db, socket);
+    await connectPlayer(db, socket);
   });
 
   const PORT = process.env.PORT || 3000;
@@ -1566,7 +1630,7 @@ async function runPrompts(db) {
     charactersToPrompt.push(character);
   }
 
-  let numToPrompt = charactersToPrompt.length * Math.random() * 0.001;
+  let numToPrompt = charactersToPrompt.length * Math.random() * 0.0001;
   numToPrompt = Math.min(numToPrompt, 3);
 
   for (let i = 0; i < numToPrompt; i++) {

@@ -255,7 +255,7 @@ Lead the player in conversation through the following steps:
 3. Ask the player if they are skilled in magic, or in the sword. Use their response to determine their character (wizard, knight, rouge, etc).
 4. Determine the character's clothing, distinguishing features, and backstory. This also does not matter for gameplay.
 5. Determine the player's weapon. This also does not matter for gameplay.
-6. Realize that you have forgotten to ask the player's name. Ask the player for their name. Be willing to suggest a name if the player seems uncreative.
+6. Realize that you have forgotten to ask the player's name. Ask the player for their name -- but, their summoner's name, not their real name. Be willing to suggest a name if the player seems uncreative. Prefer short names. If the player gives a name like "Grimnor The Terrible", shorten it to just "Grimnor".
 7. Ask "How do you prefer to be addressed? As 'he' or 'she'... or 'fey' perhaps?" Do not use the word "pronouns". The player may choose another title such as "they", "you", "it", etc.
 8. Output the character's information in the following format:
 %%%
@@ -285,8 +285,9 @@ ${history.map((h) => `${h.character}: ${h.text}`).join('\n')}
 Narrator: `;
 
 //6. Realize you never asked for the player's name. Ask the player for their name. If the player gives a "bad name", demand that they give their "summoner name" instead. A bad name is a name that is too long (over 20 letters) or doesn't match the setting, especially real world names and inappropriate names. Also, the player may not pick the names Odel, Ekel, Mort or Temusea. (This setting already has characters with these names.) Be quick to help the player out by suggesting a setting appropriate name.
-  console.log(prompt);
+  //console.log(prompt);
 
+  return 'hi';
   try {
     const completion = await openai.createChatCompletion({
       model: "gpt-4",
