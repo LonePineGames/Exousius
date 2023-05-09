@@ -766,10 +766,12 @@ let actionHandlers = {
       [target.hp, target.id]
     );
 
+    let text = character.name === target.name ? `${character.name} healed themselves for ${heal}HP.` : `${character.name} healed ${target.name} for ${heal}HP.`;
+
     await send(db, {
       room: character.room,
       character: 'Narrator',
-      text: `${character.name} healed ${target.name} for ${heal}HP.`,
+      text,
     });
 
     socketTable.filter((socket) => socket.character === target.name).forEach((socket) => {
@@ -1159,7 +1161,7 @@ async function reportRoom(db, character) {
       timestamp: new Date().toISOString(),
       room: character.room,
       character: 'Narrator',
-      text: `${room.description} In the ${room.name} was ${listNames(characters)}.`,
+      text: `${room.description}\n\nIn the ${room.name} was ${listNames(characters)}.`,
     });
 
     for (let ch of characters) {
@@ -1662,7 +1664,7 @@ async function spawnMobInRoom(db, room) {
   let shards = Math.random() < 0.2 ? 1 : 0;
   let hp = 1 + Math.floor(Math.random() * 4);
 
-  const script = `I am a ${mob}, a low level mob. I started with ${hp} hp. I am aggressive and will immediately %strike%. I will not %disappear% easily. However, I may be talked out of violence.`;
+  const script = `I am a ${mob}, a low level mob. I started with ${hp} hp. I am aggressive and will quickly %strike%. I will not %disappear% easily. However, I may be talked out of violence.`;
 
   await db.run(
     `INSERT INTO characters (role, name, room, status, script, description, title, summoner, hp, shards) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,

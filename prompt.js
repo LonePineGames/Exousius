@@ -27,12 +27,12 @@ he/him/his/his/himself
 she/her/her/hers/herself
 they/them/their/theirs/themselves
 it/it/its/its/itself
-fae/fae/fae/faes/faeself
+fae/faem/fae/faes/faeself
 I/me/my/mine/myself
 you/you/your/yours/yourself
 we/us/our/ours/ourselves
 
-Be attentive to pronouns. Example: Fae healed feaself for 2HP. Fae gave you 5 shards. We attacked it for 5 HP damage.`;
+Be attentive to pronouns. Example: Fae healed feaself for 2HP. Fae gave you 5 shards. We attacked faem for 5 HP damage.`;
 
 async function promptBot(character, suggestions, inRoom, history) {
   //console.log('promptBot', character, inRoom);
@@ -279,25 +279,28 @@ Lead the player in conversation through the following steps:
 7. Ask "How do you prefer to be addressed? As 'he' or 'she'... or 'fae' perhaps?" Do not use the word "pronouns". The player may choose another title such as "they", "you", "it", etc.
 
 8. Output the character's information in the following format:
+
 %%% CHARACTER
 Name: Player Name (Short)
 Title: She
-Description: The description of the player's character. Include the player's weapon. Write in past tense. Use the character's pronouns. Do not describe the character as "something-like" (eg Dumbledore-like). Instead, use precise descriptions such as "has an old face, with long grey and black hair." The description should be about 30 words long, all on one line.
+Description: The description of the player's character. Start with the character's name. Write in past tense. Use the character's pronouns. Do not describe the character as "something-like" (eg Dumbledore-like). Instead, use precise descriptions such as "has an old face, with long grey and black hair." Include the player's weapon. The description should be about 30 words long, all on one line.
 %%%
+
 (You MUST use the triple percent signs to delimit the output.)
 
 Example: Alice the Pirate Princess
+
 %%% CHARACTER
 Name: Alice
 Title: She
-Description: She is known as Alice, the Pirate Princess. Once a princess, now a swashbuckling pirate. She wields a cutlass and a pistol. She has long, flowing hair and a scar on her left cheek.
+Description: She was known as Alice, the Pirate Princess. Once a princess, she became a swashbuckling pirate. She wielded a cutlass and a pistol. Alice had long, flowing hair and a scar on her left cheek.
 %%%
 
 9. Confirm that the player is happy with their character. If not, change the character to match the player's wishes. Output the character's information again in the same format as above.
 
-10. Thank the player for their heroism, and welcome them to Exousius. Output %summon Player Name%. Once you output %summon ...%, the player will be sent to the world of Exousius.
+10. Thank the player for their heroism, and welcome them to Exousius. Output the character information again. Then output %summon Player Name%. Once you output %summon ...%, the player will be sent to the world of Exousius.
 
-Determine which step in the conversation you are on, and output a response approapriate for that step. The conversation should take less than 20 turns to complete.
+Determine which step in the conversation you are on, and output a response approapriate for that step.
 
 ${pronounHint}
 

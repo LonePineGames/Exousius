@@ -44,7 +44,7 @@
 
     #chat-container {
       position: relative;
-      --push-up: 100px;
+      --push-up: 50px;
       height: calc(var(--vh) + var(--push-up));
       max-width: 600px;
       margin: 0 auto;
@@ -227,61 +227,24 @@
       color: var(--primary-color);
     }
 
-    #room {
-      position: absolute;
-      top: 6rem;
-      left: 3rem;
-      z-index: 1;
-      width: fit-content;
-      padding: 0.5rem 1rem;
-      border-radius: 0 0 1rem 1rem;
-      background-color: var(--frame-bg);
-      color: white;
-      font-size: 2rem;
-      text-transform: capitalize;
-      text-shadow: 0 0 0.5rem black;
-      box-shadow: 1rem 1rem 2rem black,
-        -0.25rem -0.25rem 0.5rem black inset,
-        0.25rem 0.25rem 0.5rem #777 inset;
-    }
-
     #hp, #shards, #scriptsButton {
-      position: absolute;
-      /*width: 2rem;
-      height: 2rem;*/
-      z-index: 1;
-
       border-radius: 0 0 100% 100%;
       font-size: 2rem;
       text-align: center;
       line-height: 2rem;
       padding: 1rem;
-      background-color: var(--frame-bg);
       color: white;
       text-shadow: 0 0 0.5rem black;
-      box-shadow: 1rem 1rem 2rem black,
-        -0.25rem -0.25rem 0.5rem black inset,
-        0.25rem 0.25rem 0.5rem #777 inset;
     }
 
     .nocharacter #hp, .nocharacter #shards, .nocharacter #scriptsButton, .nocharacter #room {
       display: none;
     }
 
-    #hp {
-      top: 6rem;
-      right: 3rem;
-      color: var(--red-bg);
-    }
-
-    #shards {
-      top: 9rem;
-      right: 2rem;
-    }
-
     #scriptsButton {
       top: 9rem;
       left: 2rem;
+      background: none;
     }
 
     #scriptsButton:hover {
@@ -414,6 +377,112 @@
       line-height: 1.25rem;
     }
 
+    #ui-container {
+      position: fixed;
+      height: 4rem;
+      margin-bottom: -4rem;
+      z-index: 2;
+      width: 100%;
+      left: 0;
+      right: 0;
+      max-width: 600px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem;
+      box-sizing: border-box;
+    }
+
+    .orb-container {
+      position: relative;
+      display: block;
+      margin: 2rem 0 0 -1rem;
+      width: 6rem;
+      height: 6rem;
+      z-index: 1;
+
+      font-size: 2rem;
+      text-align: center;
+      color: white;
+      text-shadow: 0 0 0.5rem black;
+    }
+
+    .empty-orb, .full-orb-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .full-orb-container {
+      overflow: hidden;
+    }
+
+    .full-orb {
+      width: 100%;
+      height: 100%;
+    }
+
+    #hp {
+      position: absolute;
+      color: #ccc;
+      text-shadow: 0 0 1rem black;
+      font-size: 4rem;
+      line-height: 4rem;
+      width: 4rem;
+      text-align: center;
+    }
+
+    #hp.low {
+      color: var(--red-bg);
+    }
+
+    #shards {
+      position: absolute;
+      top: -1rem;
+      right: 0;
+      z-index: 1;
+      width: 6rem;
+      height: 8rem;
+      box-sizing: border-box;
+
+      background-image: url("shard.png");
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+
+      padding: 1rem;
+      color: #ccc;
+      text-shadow: 0 0 1rem black;
+      text-align: right;
+      font-size: 4rem;
+      line-height: 6rem;
+    }
+
+    #room {
+      position: absolute;
+      top: 0.5rem;
+      left: 2rem;
+      right: 2rem;
+      margin: 0 auto;
+      max-width: 250px;
+      overflow: hidden;
+      padding: 0.5rem 1rem;
+      color: white;
+      font-size: 2rem;
+      text-transform: capitalize;
+      text-align: center;
+      text-shadow: 0 0 1rem black;
+      background-color: var(--frame-bg);
+      border-radius: 0.5rem 0 0.5rem 0;
+      box-shadow: 5rem 5rem 5rem black,
+        -0.25rem -0.25rem 0.5rem black inset,
+        0.25rem 0.25rem 0.5rem #777 inset;
+    }
+
     /* Scrollbar Styling */
     ::-webkit-scrollbar {
       width: 0.5rem;
@@ -440,11 +509,21 @@
 </head>
 <body class="nocharacter">
 
-  <div id="chat-container">
+  <div id="ui-container">
+    <!--<button id="scriptsButton"><i class="fas fa-scroll"></i></button>-->
+    <div class="orb-container">
+      <img src="empty_orb.png" class="empty-orb" />
+      <div class="full-orb-container">
+        <img src="full_orb.png" class="full-orb" />
+      </div>
+      <div id="hp">10</div>
+    </div>
     <div id="room">Origin</div>
-    <button id="scriptsButton"><i class="fas fa-scroll"></i></button>
-    <div id="hp">10</div>
     <div id="shards">0</div>
+
+  </div>
+  <div id="chat-container">
+
     <div id="message-container">
       <div class="context-message">
         <img src="enmeshed.png" alt="Exousius">
@@ -456,6 +535,7 @@
       </div>
       <div id="typing" class="message">...</div>
     </div>
+
     <div id="player-name">Player</div>
     <textarea id="message-input" placeholder="ENTER YOUR WORDS" autofocus="true"></textarea>
     <div id="toolbar">
@@ -737,7 +817,6 @@
 
     socket.on('background-image', function(img) {
       let chatElement = document.getElementById('chat-container');
-
       chatElement.style.background = `linear-gradient(180deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(${img}), #222`;
       chatElement.style.backgroundSize = 'cover';
       chatElement.style.backgroundPosition = 'center';
@@ -745,6 +824,11 @@
       document.body.style.background = `url(${img}), #333`;
       document.body.style.backgroundSize = 'cover';
       document.body.style.backgroundPosition = 'center';
+
+      let roomElem = document.getElementById('room');
+      roomElem.style.background = `linear-gradient(180deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(${img}), #333`;
+      roomElem.style.backgroundSize = 'cover';
+      roomElem.style.backgroundPosition = 'center';
     });
 
     socket.on('shards', function(shards) {
@@ -752,7 +836,27 @@
     });
 
     socket.on('hp', function(hp) {
-      document.getElementById('hp').innerText = hp;
+      let hpElem = document.getElementById('hp');
+      hpElem.innerText = hp;
+      if (hp < 5) {
+        hpElem.classList.add('low');
+      } else {
+        hpElem.classList.remove('low');
+      }
+      /*
+      const emptyOrb = document.querySelector('.empty-orb');
+      const fullOrb = document.querySelector('.full-orb');
+      const orbHeight = emptyOrb.offsetHeight;
+      const percentage = hp / 10;
+      console.log('percentage', percentage);
+      fullOrb.style.height = `${orbHeight * percentage}px`; */
+
+      const fullOrbContainer = document.querySelector('.full-orb-container');
+      const orbHeight = fullOrbContainer.offsetHeight;
+      const maxHp = 10;
+      const percentage = (1 - hp / maxHp) * 100;
+
+      fullOrbContainer.style.clipPath = `inset(${percentage}% 0% 0% 0%)`;
     });
 
     socket.on('scripts', function(scripts) {
