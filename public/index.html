@@ -138,6 +138,23 @@
       to   { opacity: 1; }
     }
 
+    #typing {
+      padding: 0 2rem 0.75rem 2rem;
+      animation: typing 1s infinite;
+    }
+
+    @keyframes typing {
+      0% {
+        opacity: 0.5;
+      }
+      50% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0.5;
+      }
+    }
+
     #player-name, .message .name {
       margin: 0rem 0.25rem 0 -0.75rem;
       padding: 0 0.5rem 0rem 0.5rem;
@@ -239,6 +256,10 @@
         0.25rem 0.25rem 0.5rem #777 inset;
     }
 
+    .nocharacter #hp, .nocharacter #shards, .nocharacter #scriptsButton, .nocharacter #room {
+      display: none;
+    }
+
     #hp {
       top: 6rem;
       right: 3rem;
@@ -265,6 +286,10 @@
       overflow-y: auto;
 
       text-align: right;
+    }
+
+    .nocharacter #suggestions {
+      height: 0;
     }
 
     #suggestions.cooldown {
@@ -401,7 +426,7 @@
 
   </style>
 </head>
-<body>
+<body class="nocharacter">
 
   <div id="chat-container">
     <div id="room">Origin</div>
@@ -417,8 +442,9 @@
       </div>
       <div id="messages">
       </div>
+      <div id="typing" class="message">...</div>
     </div>
-    <div id="player-name">Name</div>
+    <div id="player-name">Player</div>
     <textarea id="message-input" placeholder="ENTER YOUR WORDS" autofocus="true"></textarea>
     <div id="toolbar">
       <button id="reset" class="toolbar-button"><i class="fas fa-undo"></i> Reset</button>
@@ -439,7 +465,7 @@
   </div>
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    let myName = '';
+    let myName = 'Player';
     const socket = io();
     const messageContainer = document.getElementById('message-container');
     /*
@@ -523,9 +549,18 @@
     socket.on('character', (name) => {
       document.getElementById('player-name').innerText = name;
       myName = name;
+      document.body.classList.remove('nocharacter');
+      document.getElementById('typing').style.display = 'none';
     });
 
     function messageReceived(message) {
+      // Show or hide the typing indicator
+      if (myName === 'Player' && message.character !== 'Narrator') {
+        document.getElementById('typing').style.display = 'block';
+      } else {
+        document.getElementById('typing').style.display = 'none';
+      }
+
       const messages = document.getElementById('messages');
 
       // Creating div for character's name
@@ -570,13 +605,10 @@
                 });
                 messageElement.appendChild(butt);
 
-                if (actionName === 'summon' && characterInfo != '') {
-                  console.log("summon");
+                if (myName === 'Player' && actionName === 'summon' && characterInfo != '') {
+                  console.log("summon", characterInfo);
                   setTimeout(() => {
-                    messageReceived({
-                      character: 'Narrator',
-                      text: `I summoned ${characterInfo}.`
-                    });
+                    socket.emit('summon', characterInfo);
                   }, 5000);
                 }
               }
@@ -751,8 +783,8 @@
     ];
 
     let currentActiveButtonId = 'rate-1';
-    let lastRate = 6000;
-    let currentRate = 6000;
+    let lastRate = 10000;
+    let currentRate = 10000;
 
     rateButtons.forEach(({ elementId, rate }) => {
       document.getElementById(elementId).addEventListener('click', () => {

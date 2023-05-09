@@ -9,7 +9,7 @@ const RomanNumerals = require('roman-numerals');
 const { promptBot, punchUpNarration, describePlace, createPicture, listMobs, promptCharacterBuilder } = require('./prompt');
 const { listNames } = require('./names');
 
-let gameRate = 5000;
+let gameRate = 10000;
 let socketTable = [];
 const maxShards = 100;
 
@@ -1159,110 +1159,136 @@ async function characterBuilder(socket, cbHistory, msg) {
     text: response,
   };
 
-  socket.emit('cb-message', narratorMsg);
+  socket.emit('message', narratorMsg);
   cbHistory.push(narratorMsg);
 }
 
-initializeDatabase().then((db) => {
-  io.on('connection', async (socket) => {
-    console.log('a user connected');
+async function summonPlayer(db, socket, characterInfoText) {
+  console.log(characterInfoText);
 
-    let cbHistory = [];
-    socket.on('cb-connect', async () => {
-      console.log('cb-connect');
-      characterBuilder(socket, cbHistory);
-    });
-    socket.on('cb-message', async (msg) => {
-      characterBuilder(socket, cbHistory, msg);
-    });
-
-    const name = 'Arkim';
-
-    let character = await db.get(
-      `SELECT * FROM characters WHERE name = ?;`,
-      [name]
-    );
-
-    console.log(character);
-
-    if (character === undefined) {
-      await db.run(
-        `INSERT INTO characters (role, name, room, status, script, description, title, summoner, hp, shards) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-        ['user', name, 'origin', 1, '', '', 'He', 'Narrator', 10, 10]
-      );
-
-      let demons = [
-        {
-          name: 'Ekel',
-          script: 'I am Ekel. I am always loyal to my summoner. I stay with my summoner, going wherever my summoner goes, and I %strike% my summoner\'s enemies. I can %heal% as well as %search% for shards. If my master asks me to %return% I will do so immediately.',
-          description: 'Ekel is a tall and imposing figure, clad in shining plate armor adorned with intricate engravings. Beneath the armor, Ekel wears a suit of chainmail, providing additional protection. As a knight archetype, Ekel wields a mighty sword with a jeweled hilt, which is used for striking down enemies. His helmet features a visor that can be lifted to reveal determined, steel-blue eyes and a chiseled jawline.',
-          title: 'He',
-        },
-
-        {
-          name: 'Odel',
-          script: 'I am Odel. I am always loyal to my summoner. I %search% for shards. When I find shards, I keep searching in the same place. When I find nothing, I %go% to a different place. When I have 5 shards, I return.',
-          description: 'Odel is a petite and agile peasant, dressed in simple, earthy-toned clothing made from rough-woven fabric. Her long, braided hair is a deep chestnut color, framing her youthful face and sharp, hazel eyes. Odel wears a small pouch at her waist, where she keeps the shards she finds. She carries a trusty slingshot as her weapon, which she uses with surprising accuracy and skill.',
-          title: 'She',
-        },
-
-        {
-          name: 'Mort',
-          script: 'I am Mort. I despise my summoner and want to grow more powerful than them. I will %search% for more shards to make myself more powerful. If I cannot find any shards, I will %summon Odel% as she is good at collecting shards quickly. I can also %heal% and %go elsewhere%. But I will never %return% to my summoner. I would rather die fighting him than sumbit!',
-          description: 'Mort is a mysterious figure, garbed in a flowing, dark cloak that conceals much of our appearance. A wizard but not a human, it wields a staff topped with a crystal orb that glows with arcane energy, using it to cast powerful spells. Its hood covers most of its face, leaving only a pair of piercing, silver eyes visible. The rest of its attire consists of dark, well-fitted clothing, ideal for blending into shadows and staying hidden.',
-          title: 'It',
-        },
-
-        {
-          name: 'Temusea',
-          script: 'I am Temusea. I can create beautiful lands and locations using a command such as %create ancient forest% or %create secret tavern%. I require one shard to create one location. New locations always have many shards, so it\'s a good idea to create more!',
-          description: 'Temusea is an ethereal fey with an air of enchanting beauty. Fey has delicate, butterfly-like wings that shimmer with iridescent colors, and feys long, flowing hair is a cascade of multicolored strands. Temusea is dressed in a gown of gossamer fabric, adorned with tiny, twinkling lights. As a magical being, fey can conjure powerful illusions and manipulate feys surroundings. Instead of a weapon, Temusea uses feys innate magical abilities to fight.',
-          title: 'Fey',
-        },
-      ];
-
-      for (let demon of demons) {
-        await db.run(
-          `INSERT INTO scripts (character, name, script, description, title) VALUES (?, ?, ?, ?, ?);`,
-          [name, demon.name, demon.script, demon.description, demon.title]
-        );
-      }
-
-      character = await db.get(
-        `SELECT * FROM characters WHERE name = ?;`,
-        [name]
-      );
+  let lines = characterInfoText.split('\n');
+  let characterInfo = {};
+  let keyMap = { Name: 'name', Title: 'title', Description: 'description' };
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+    let colonIndex = line.indexOf(':');
+    if (colonIndex === -1) {
+      continue;
     }
 
-    socket.join(character.room);
-    addSocket(socket, character.name);
+    let key = line.substring(0, colonIndex).trim();
+    let value = line.substring(colonIndex + 1).trim();
+    let mappedKey = keyMap[key];
+    if (mappedKey) {
+      characterInfo[mappedKey] = value;
+    }
+  }
 
-    socket.emit('reset');
-    socket.emit('room', character.room);
-    socket.emit('character', character.name);
-    socket.emit('hp', character.hp);
-    socket.emit('shards', character.shards);
+  let character = await db.get(
+    `SELECT * FROM characters WHERE name = ?;`,
+    [characterInfo.name]
+  );
 
-    let suggestions = await generateActionSuggestions(db, character.name);
-    socket.emit('suggestions', suggestions);
+  if (character !== undefined) {
+    return false;
+  }
 
-    let suggestionsInterval = setInterval(async () => {
-      let suggestions = await generateActionSuggestions(db, character.name);
-      socket.emit('suggestions', suggestions);
-    }, 250);
+  await db.run(
+    `INSERT INTO characters (role, name, room, status, script, description, title, summoner, hp, shards) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+    ['user', characterInfo.name, 'origin', 1, '', characterInfo.description, characterInfo.title, 'Narrator', 10, 0]
+  );
 
-    let scripts = await db.all(
-      `SELECT name, script FROM scripts WHERE character = ?;`,
-      [character.name]
+  let demons = [
+    {
+      name: 'Ekel',
+      script: 'I am Ekel. I am always loyal to my summoner. I stay with my summoner, going wherever my summoner goes, and I %strike% my summoner\'s enemies. I can %heal% as well as %search% for shards. If my master asks me to %return% I will do so immediately.',
+      description: 'Ekel is a tall and imposing figure, clad in shining plate armor adorned with intricate engravings. Beneath the armor, Ekel wears a suit of chainmail, providing additional protection. As a knight archetype, Ekel wields a mighty sword with a jeweled hilt, which is used for striking down enemies. His helmet features a visor that can be lifted to reveal determined, steel-blue eyes and a chiseled jawline.',
+      title: 'He',
+    },
+
+    {
+      name: 'Odel',
+      script: 'I am Odel. I am always loyal to my summoner. I %search% for shards. When I find shards, I keep searching in the same place. When I find nothing, I %go% to a different place. When I have 5 shards, I return.',
+      description: 'Odel is a petite and agile peasant, dressed in simple, earthy-toned clothing made from rough-woven fabric. Her long, braided hair is a deep chestnut color, framing her youthful face and sharp, hazel eyes. Odel wears a small pouch at her waist, where she keeps the shards she finds. She carries a trusty slingshot as her weapon, which she uses with surprising accuracy and skill.',
+      title: 'She',
+    },
+
+    {
+      name: 'Mort',
+      script: 'I am Mort. I despise my summoner and want to grow more powerful than them. I will %search% for more shards to make myself more powerful. If I cannot find any shards, I will %summon Odel% as she is good at collecting shards quickly. I can also %heal% and %go elsewhere%. But I will never %return% to my summoner. I would rather die fighting him than sumbit!',
+      description: 'Mort is a mysterious figure, garbed in a flowing, dark cloak that conceals much of our appearance. A wizard but not a human, it wields a staff topped with a crystal orb that glows with arcane energy, using it to cast powerful spells. Its hood covers most of its face, leaving only a pair of piercing, silver eyes visible. The rest of its attire consists of dark, well-fitted clothing, ideal for blending into shadows and staying hidden.',
+      title: 'It',
+    },
+
+    {
+      name: 'Temusea',
+      script: 'I am Temusea. I can create beautiful lands and locations using a command such as %create ancient forest% or %create secret tavern%. I require one shard to create one location. New locations always have many shards, so it\'s a good idea to create more!',
+      description: 'Temusea is an ethereal fey with an air of enchanting beauty. Fey has delicate, butterfly-like wings that shimmer with iridescent colors, and feys long, flowing hair is a cascade of multicolored strands. Temusea is dressed in a gown of gossamer fabric, adorned with tiny, twinkling lights. As a magical being, fey can conjure powerful illusions and manipulate feys surroundings. Instead of a weapon, Temusea uses feys innate magical abilities to fight.',
+      title: 'Fey',
+    },
+  ];
+
+  for (let demon of demons) {
+    await db.run(
+      `INSERT INTO scripts (character, name, script, description, title) VALUES (?, ?, ?, ?, ?);`,
+      [characterInfo.name, demon.name, demon.script, demon.description, demon.title]
     );
-    socket.emit('scripts', scripts);
+  }
 
-    let seenMessages = await recentMessages(db, character, 100);
-    socket.emit('previous messages', seenMessages);
-    reportRoom(db, character);
+  character = await db.get(
+    `SELECT * FROM characters WHERE name = ?;`,
+    [characterInfo.name]
+  );
 
-    socket.on('message', async (msg) => {
-      let character = socket.character;
+  connectCharacter(db, socket, character);
+
+  return true;
+}
+
+async function connectCharacter(db, socket, character) {
+  socket.join(character.room);
+  addSocket(socket, character.name);
+
+  socket.emit('reset');
+  socket.emit('room', character.room);
+  socket.emit('character', character.name);
+  socket.emit('hp', character.hp);
+  socket.emit('shards', character.shards);
+
+  let scripts = await db.all(
+    `SELECT name, script FROM scripts WHERE character = ?;`,
+    [character.name]
+  );
+  socket.emit('scripts', scripts);
+
+  let seenMessages = await recentMessages(db, character, 100);
+  socket.emit('previous messages', seenMessages);
+  reportRoom(db, character);
+}
+
+async function connectPlayer(db, socket) {
+  let cbHistory = [];
+  characterBuilder(socket, cbHistory);
+
+  socket.emit('reset');
+  socket.character = 'Player';
+
+  let suggestionsInterval = setInterval(async () => {
+    if (socket.character === 'Player') return;
+    let suggestions = await generateActionSuggestions(db, socket.character);
+    socket.emit('suggestions', suggestions);
+  }, 250);
+
+  socket.on('message', async (msg) => {
+    let character = socket.character;
+    if (character === 'Player') {
+      msg.timestamp = new Date().toISOString();
+      msg.character = 'Player';
+      msg.room = 'origin';
+      socket.emit('message', msg);
+      characterBuilder(socket, cbHistory, msg);
+
+    } else {
       let room = await db.get(
         `SELECT room FROM characters WHERE name = ?;`,
         [character]
@@ -1274,42 +1300,68 @@ initializeDatabase().then((db) => {
       };
 
       await send(db, messageData);
+    }
+  });
 
-      //let suggestions = await generateActionSuggestions(db, character);
-      //socket.emit('suggestions', suggestions);
-    });
+  socket.on('summon', (characterInfo) => {
+    console.log('summon player', characterInfo);
+    if (socket.character !== 'Player') {
+      console.log('summon but the player already has a character');
+      return;
+    }
 
-    socket.on('set-rate', (rate) => {
-      console.log('setting rate to', rate);
-      gameRate = rate;
-    });
+    let result = summonPlayer(db, socket, characterInfo);
+    if (result) {
+      cbHistory = [];
 
-    socket.on('write-script', async (script) => {
-      let character = socket.character;
+    } else {
+      let msg = {
+        room: 'origin',
+        character: 'Narrator',
+        text: `But the summoning failed. There was already a character named ${characterInfo.name} in this world.`,
+      };
+      cbHistory.push(msg);
+      characterBuilder(socket, cbHistory, msg);
+    }
+  });
 
-      // if the script already exists, update it
-      let existingScript = await db.get(
-        `SELECT * FROM scripts WHERE character = ? AND name = ?;`,
-        [character, script.name]
+  socket.on('set-rate', (rate) => {
+    console.log('setting rate to', rate);
+    gameRate = rate;
+  });
+
+  socket.on('write-script', async (script) => {
+    let character = socket.character;
+
+    // if the script already exists, update it
+    let existingScript = await db.get(
+      `SELECT * FROM scripts WHERE character = ? AND name = ?;`,
+      [character, script.name]
+    );
+    if (existingScript !== undefined) {
+      await db.run(
+        `UPDATE scripts SET script = ? WHERE character = ? AND name = ?;`,
+        [script.script, character, script.name]
       );
-      if (existingScript !== undefined) {
-        await db.run(
-          `UPDATE scripts SET script = ? WHERE character = ? AND name = ?;`,
-          [script.script, character, script.name]
-        );
-      } else {
-        await db.run(
-          `INSERT INTO scripts (character, name, script) VALUES (?, ?, ?);`,
-          [character, script.name, script.script]
-        );
-      }
-    });
+    } else {
+      await db.run(
+        `INSERT INTO scripts (character, name, script) VALUES (?, ?, ?);`,
+        [character, script.name, script.script]
+      );
+    }
+  });
 
-    socket.on('disconnect', () => {
-      console.log('user disconnected');
-      removeSocket(socket);
-      clearInterval(suggestionsInterval);
-    });
+  socket.on('disconnect', () => {
+    console.log('user disconnected');
+    removeSocket(socket);
+    clearInterval(suggestionsInterval);
+  });
+}
+
+initializeDatabase().then((db) => {
+  io.on('connection', async (socket) => {
+    console.log('a user connected');
+    connectPlayer(db, socket);
   });
 
   const PORT = process.env.PORT || 3000;

@@ -252,20 +252,29 @@ Lead the player in conversation through the following steps:
 
 1. Apologize to the player for the need to bring them here.
 2. Determine if the player is new to these lands, or if they are a seasoned warrior.
-3. Ask the player if they are skilled in magic, or in the sword. Use their response to determine their character archetype (wizard, knight, rouge, etc).
+3. Ask the player if they are skilled in magic, or in the sword. Use their response to determine their character (wizard, knight, rouge, etc).
 4. Determine the character's clothing, distinguishing features, and backstory. This also does not matter for gameplay.
 5. Determine the player's weapon. This also does not matter for gameplay.
-6. Realize you never asked for the player's name. Ask the player for their name. If the player gives a "bad name", demand that they give their "summoner name" instead. A bad name is a name that is too long (over 20 letters) or doesn't match the setting, especially real world names and inappropriate names. Also, the player may not pick the names Odel, Ekel, Mort or Temusea. (This setting already has characters with these names.) Be quick to help the player out by suggesting a setting appropriate name.
-7. If it is not already obvious, determine how the player prefers to be addressed. (Specifically, determine their pronouns, but do not use the word "pronouns".) The player may chose "he", "she", "fey", "we", "you", "I", "it", "they", or something else.
-8. Once you have all the information, output the following:
+6. Realize that you have forgotten to ask the player's name. Ask the player for their name. Be willing to suggest a name if the player seems uncreative.
+7. Ask "How do you prefer to be addressed? As 'he' or 'she'... or 'fey' perhaps?" Do not use the word "pronouns". The player may choose another title such as "they", "you", "it", etc.
+8. Output the character's information in the following format:
 %%%
 Name: Player Name
-Title: He (or She, or They, etc)
+Title: She
 Description: The description of the player's character. Include the player's weapon. Write in past tense. Use the character's pronouns. The description should be about 40 words long.
 %%%
-(You must use the triple percent signs to delimit the output.)
-9. Confirm that the player is happy with their character. If not, change the character to match the player's wishes.
-10. Thank the player for their time, and welcome them to Exousius. Output %summon Player Name%. Once you output %summon ...%, the player will be sent to the world of Exousius.
+(You MUST use the triple percent signs to delimit the output.)
+
+Example:
+
+%%%
+Name: Alice
+Title: She
+Description: Once a princess, now a swashbuckling pirate. She wields a cutlass and a pistol. She has long, flowing hair and a scar on her left cheek.
+%%%
+
+9. Confirm that the player is happy with their character. If not, change the character to match the player's wishes. Output the character's information again in the same format as above.
+10. Thank the player for their heroism, and welcome them to Exousius. Output %summon Player Name%. Once you output %summon ...%, the player will be sent to the world of Exousius.
 
 Determine which step in the conversation you are on, and output a response approapriate for that step. The conversation should take less than 20 turns to complete.
 
@@ -275,11 +284,12 @@ ${history.map((h) => `${h.character}: ${h.text}`).join('\n')}
 ### Response
 Narrator: `;
 
+//6. Realize you never asked for the player's name. Ask the player for their name. If the player gives a "bad name", demand that they give their "summoner name" instead. A bad name is a name that is too long (over 20 letters) or doesn't match the setting, especially real world names and inappropriate names. Also, the player may not pick the names Odel, Ekel, Mort or Temusea. (This setting already has characters with these names.) Be quick to help the player out by suggesting a setting appropriate name.
   console.log(prompt);
 
   try {
     const completion = await openai.createChatCompletion({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4",
       temperature: 1.2,
       max_tokens: 400,
       messages: [{role: "user", content: prompt}],
@@ -288,7 +298,7 @@ Narrator: `;
     let lines = message.split("\n");
     let badLine = -1;
     for (let i = 0; i < lines.length; i++) {
-      if (lines[i].startsWith('Narrator:') || lines[i].startsWith('Player:')) {
+      if (lines[i].startsWith('Narrator:') || lines[i].startsWith('Player:') || lines[i].startsWith('Step ')) {
         badLine = i;
         break;
       }
