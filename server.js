@@ -235,6 +235,30 @@ async function spendShard(db, character) {
   return true;
 }
 
+async function announceCharacter(db, character) {
+  if (character.role === 'mob') return;
+  let ch = character.name;
+  let inRoom = await db.all(
+    `SELECT * FROM characters WHERE room = ? and hp > 0 and role = 'user';`,
+    [character.room]
+  );
+
+  for (let player of inRoom) {
+    socketTable.filter((socket) => socket.character === player.name).forEach((socket) => {
+      // if ch is not in socket.seenCharacters, add it and announce the character
+      if (!socket.seenCharacters.find((name) => name === ch)) {
+        socket.seenCharacters.push(ch);
+
+        socket.emit('message', {
+          character: 'Narrator',
+          room: character.room,
+          text: character.description,
+        });
+      }
+    });
+  }
+}
+
 let actionHandlers = {
   async go(db, character, action) {
     const room = action.text;
@@ -286,15 +310,17 @@ let actionHandlers = {
       text: `${character.name} left to go to the ${room}.`,
     });
 
-    if (playerInRoom) {
-      reportRoom(db, character, room);
-    }
-
     await send(db, {
       room: room,
       character: 'Narrator',
       text: `${character.name} traveled to the ${room}.`,
     });
+
+    if (playerInRoom) {
+      await reportRoom(db, character, room);
+    }
+
+    await announceCharacter(db, character);
   },
 
   async create(db, character, action) {
@@ -1127,7 +1153,7 @@ async function reportRoom(db, character) {
     [character.room]
   ).then((rows) => rows.map((row) => row.name));
 
-  socketTable.filter((socket) => socket.character === character.name).forEach((socket) => {
+  socketTable.filter((socket) => socket.character === character.name).forEach(async (socket) => {
     socket.emit('message', {
       timestamp: new Date().toISOString(),
       room: character.room,
@@ -1135,9 +1161,30 @@ async function reportRoom(db, character) {
       text: `${room.description} In the ${room.name} was ${listNames(characters)}.`,
     });
 
+    for (let ch of characters) {
+      // if ch is not in socket.seenCharacters, add it and announce the character
+      if (!socket.seenCharacters.find((name) => name === ch)) {
+        socket.seenCharacters.push(ch);
+        let chInfo = await db.get(
+          `SELECT * FROM characters WHERE name = ?`,
+          [ch]
+        );
+
+        if (chInfo && chInfo.role !== 'mob') {
+          socket.emit('message', {
+            character: 'Narrator',
+            room: character.room,
+            text: chInfo.description,
+          });
+        }
+      }
+    }
+
     console.log("reportRoom url", room.image_url);
     socket.emit('background-image', room.image_url);
   });
+
+  await announceCharacter(db, character);
 }
 
 async function recentMessages(db, character, number) {
@@ -1155,6 +1202,7 @@ async function recentMessages(db, character, number) {
 
 function addSocket(socket, character) {
   socket.character = character;
+  socket.seenCharacters = [];
   // if the socket is not in the table, add it
   if (!socketTable.find((entry) => entry === socket)) {
     socketTable.push(socket);
