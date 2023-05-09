@@ -290,6 +290,13 @@ let actionHandlers = {
       return;
     }
 
+    let message = {
+      room: room,
+      character: 'Narrator',
+      text: `${character.name} traveled to the ${room}.`,
+    };
+    message.text = await punchUp(db, message);
+
     await db.run(
       `UPDATE characters SET room = ? WHERE name = ?;`,
       [room, character.name]
@@ -304,17 +311,9 @@ let actionHandlers = {
       playerInRoom = true;
     });
 
-    await send(db, {
-      room: previousRoom,
-      character: 'Narrator',
-      text: `${character.name} left to go to the ${room}.`,
-    });
-
-    await send(db, {
-      room: room,
-      character: 'Narrator',
-      text: `${character.name} traveled to the ${room}.`,
-    });
+    await send(db, message);
+    message.room = previousRoom;
+    await send(db, message);
 
     if (playerInRoom) {
       await reportRoom(db, character, room);
@@ -424,9 +423,11 @@ let actionHandlers = {
       }
     });
 
+    /*
     setTimeout(async () => {
       await spawnMobInRoom(db, room);
     }, 5000);
+    */
   },
 
   async search(db, character, action) {
@@ -1387,7 +1388,7 @@ async function summonPlayer(db, socket, characterInfoText, cbHistory) {
   });
 
   setTimeout(async () => {
-    await send(db, {
+    socket.emit('message', {
       room: 'origin',
       character: 'Narrator',
       punchUp: false,
@@ -1398,7 +1399,7 @@ async function summonPlayer(db, socket, characterInfoText, cbHistory) {
 %strike% - to fight
 %heal% - to heal
 %summon Odel% (Cost: 1 shard) - Odel is good at searching for shards.
-%create ...% (Cost: 1 shard) - Creates a new land or location. The player may create anything they imagine. New lands usually have many shards to find.
+%create ...% (Cost: 1 shard) - Creates a new land or location. ${characterInfo.name} may create anything they imagine. New lands usually have many shards to find.
 %destroy% (Cost: 1 shard) - to destroy the land.
 %protect% (Cost: 1 shard) - to protect the land from minor enemies.
 %scry% (Cost: 1 shard) - to see what has happened here in the past.`
