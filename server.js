@@ -1497,6 +1497,9 @@ async function connectPlayer(db, socket) {
         ...msg,
       };
 
+      // for debugging
+      //socket.emit('shards', Math.floor(Math.random()*200));
+
       await send(db, messageData);
     }
   });
