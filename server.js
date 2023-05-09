@@ -134,7 +134,7 @@ async function send(db, messageData) {
 
   console.log(`${message.character} (${message.room}): ${message.text}`);
 
-  if (message.character === 'Narrator') {
+  if (message.character === 'Narrator' && message.punchUp !== false) {
     message.text = await punchUp(db, message);
   }
 
@@ -1385,6 +1385,26 @@ async function summonPlayer(db, socket, characterInfoText, cbHistory) {
     character: 'Narrator',
     text: `${characterInfo.name} has been summoned. ${characterInfo.name} enters the origin, the source of all places in this world.`,
   });
+
+  setTimeout(async () => {
+    await send(db, {
+      room: 'origin',
+      character: 'Narrator',
+      punchUp: false,
+      text: `New to this world and unsure what to do, ${characterInfo.name} considered the many options:
+
+%search% - to acquire shards
+%go ...% - to explore the world.
+%strike% - to fight
+%heal% - to heal
+%summon Odel% (Cost: 1 shard) - Odel is good at searching for shards.
+%create ...% (Cost: 1 shard) - Creates a new land or location. The player may create anything they imagine. New lands usually have many shards to find.
+%destroy% (Cost: 1 shard) - to destroy the land.
+%protect% (Cost: 1 shard) - to protect the land from minor enemies.
+%scry% (Cost: 1 shard) - to see what has happened here in the past.`
+
+    });
+  }, 5000);
 
   return true;
 }

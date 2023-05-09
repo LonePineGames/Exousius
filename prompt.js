@@ -90,7 +90,7 @@ async function punchUpNarration(narration, history, room, inRoom) {
       if (p.title === '') {
         return `${p.name}: ${p.description}`;
       } else {
-        return `${p.name} (Pronoun: ${p.title}): ${p.description}`;
+        return `${p.name} (Pronoun: ${p.title.toLowerCase()}): ${p.description}`;
       }
     }).join('\n');
 
@@ -295,19 +295,7 @@ Description: She is known as Alice, the Pirate Princess. Once a princess, now a 
 
 9. Confirm that the player is happy with their character. If not, change the character to match the player's wishes. Output the character's information again in the same format as above.
 
-10. If the player is new to the game, quickly teach them the following spells:
-%search% - to acquire shards
-%summon Odel% - Odel is good at searching for shards. Cost: 1 shard.
-%create ...% - Creates a new land or location. Cost: 1 shard. The player may create anything they imagine. New lands usually have many shards to find.
-%go ...% - to explore the world.
-%strike% - to fight
-%heal% - to heal
-
-These commands will not work until the player has been summoned to Exousius. Give the player a very brief, easy lesson. Nothing complicated.
-
-11. Confirm that the player understands everything so far and is ready to be summoned. Ask them if they agree to their mission, to save the world of Exousius.
-
-12. Thank the player for their heroism, and welcome them to Exousius. Output %summon Player Name%. Once you output %summon ...%, the player will be sent to the world of Exousius.
+10. Thank the player for their heroism, and welcome them to Exousius. Output %summon Player Name%. Once you output %summon ...%, the player will be sent to the world of Exousius.
 
 Determine which step in the conversation you are on, and output a response approapriate for that step. The conversation should take less than 20 turns to complete.
 
