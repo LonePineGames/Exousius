@@ -5,6 +5,7 @@ const io = require('socket.io')(http);
 const sqlite3 = require('sqlite3').verbose();
 const sqlite = require('sqlite');
 const dbFile = './world.db';
+const fs = require('fs');
 const RomanNumerals = require('roman-numerals');
 const { promptBot, punchUpNarration, describePlace, createPicture, listMobs, promptCharacterBuilder } = require('./prompt');
 const { listNames } = require('./names');
@@ -301,6 +302,15 @@ let actionHandlers = {
     const roomName = action.text;
     if (roomName === '') return;
 
+    if (roomName === '...') {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `But first ${character.name} needed to determine what location to create. Perhaps %create ancient forest% or %create secret tavern%?`,
+      });
+      return;
+    }
+
     let roomExists = await db.get(
       `SELECT name FROM rooms WHERE name = ?;`,
       [roomName]
@@ -325,7 +335,7 @@ let actionHandlers = {
     }
 
     let totalShards = await getTotalShards(db);
-    let initShards = Math.max(0, Math.min(maxShards - totalShards, 5));
+    let initShards = Math.max(0, Math.min(maxShards - totalShards, 3));
     console.log("initShards", initShards);
 
     let id = await db.run(
@@ -358,7 +368,7 @@ let actionHandlers = {
     );
 
     await send(db, {
-      room: roomName,
+      room: character.room,
       character: character.name,
       text: `%go ${roomName}%`,
     });
@@ -607,7 +617,8 @@ let actionHandlers = {
     let target = potentialTargets[Math.floor(Math.random() * potentialTargets.length)];
     let damage = 1;
     if (character.shards > 0) {
-      damage += 1 + Math.floor(character.shards/5);
+      let bonus = Math.floor((1 + character.shards/5) * Math.random());
+      damage += bonus;
     }
     console.log(character, target, damage);
     let sacrifice = 0;
@@ -1143,6 +1154,22 @@ function removeSocket(socket) {
   socketTable = socketTable.filter((entry) => entry !== socket);
 }
 
+async function sendRandomRoomImage(socket) {
+  // read all jpg files from public/backgrounds/
+  let files = await fs.promises.readdir('public/backgrounds/');
+  let jpgFiles = files.filter((file) => file.endsWith('.jpg'));
+
+  // pick a random file
+  let randomFile = jpgFiles[Math.floor(Math.random() * jpgFiles.length)];
+
+  let path = `/backgrounds/${randomFile}`;
+
+  console.log(path);
+
+  // send the file to the socket
+  socket.emit('background-image', path);
+}
+
 async function characterBuilder(socket, cbHistory, msg) {
   if (msg) {
     msg.room = 'origin';
@@ -1150,6 +1177,7 @@ async function characterBuilder(socket, cbHistory, msg) {
     cbHistory.push(msg);
     socket.emit('message', msg);
     console.log('characterBuilder', msg);
+    sendRandomRoomImage(socket);
   }
 
   if (cbHistory.length > 1) {
@@ -1191,6 +1219,17 @@ async function summonPlayer(db, socket, characterInfoText, cbHistory) {
   console.log(characterInfo);
   console.log(characterInfo.name);
 
+  if (!characterInfo.name || !characterInfo.title || !characterInfo.description) {
+    console.log('summonPlayer failed (missing info)');
+    let msg = {
+      room: 'origin',
+      character: 'System',
+      text: `But the summoning failed. You must provide a name, title, and description.`,
+    };
+    characterBuilder(socket, cbHistory, msg);
+    return false;
+  }
+
   let character = await db.get(
     `SELECT * FROM characters WHERE name = ?;`,
     [characterInfo.name]
@@ -1202,7 +1241,7 @@ async function summonPlayer(db, socket, characterInfoText, cbHistory) {
     console.log('summonPlayer failed (already exists)');
     let msg = {
       room: 'origin',
-      character: 'Narrator',
+      character: 'System',
       text: `But the summoning failed. There was already a character named ${characterInfo.name} in this world.`,
     };
     characterBuilder(socket, cbHistory, msg);
@@ -1272,6 +1311,22 @@ async function summonPlayer(db, socket, characterInfoText, cbHistory) {
     );
   }
 
+  character = await db.get(
+    `SELECT * FROM characters WHERE name = ?;`,
+    [characterInfo.name]
+  );
+
+  if (character) {
+    let seenMessages = await recentMessages(db, character, 100);
+    socket.emit('previous messages', seenMessages);
+  }
+
+  await send(db, {
+    room: 'origin',
+    character: 'Narrator',
+    text: `${characterInfo.name} has been summoned. ${characterInfo.name} enters the origin, the source of all places in this world.`,
+  });
+
   return true;
 }
 
@@ -1284,11 +1339,13 @@ async function connectCharacter(db, socket, name) {
   console.log('connectCharacter', character);
 
   if (!character) {
+    /*
     socket.emit('message', {
       room: 'origin',
       character: 'Narrator',
       text: `I don't know who ${name} is.`,
     });
+    */
     socket.emit('character', 'Player');
     return;
   }
@@ -1325,7 +1382,7 @@ async function connectPlayer(db, socket) {
     let character = socket.character;
     if (character === 'Player') {
       msg.character = 'Player';
-      characterBuilder(socket, cbHistory, msg);
+      await characterBuilder(socket, cbHistory, msg);
 
     } else {
       let room = await db.get(
@@ -1379,7 +1436,7 @@ async function connectPlayer(db, socket) {
         character: 'Narrator',
         text: `Who is that wandering about the void? %summon Player%`,
       };
-      characterBuilder(socket, cbHistory, msg);
+      await characterBuilder(socket, cbHistory, msg);
     }
   }, 3000);
 
@@ -1630,8 +1687,14 @@ async function runPrompts(db) {
     charactersToPrompt.push(character);
   }
 
-  let numToPrompt = charactersToPrompt.length * Math.random() * 0.0001;
-  numToPrompt = Math.min(numToPrompt, 3);
+  let numRooms = await db.all(
+    `SELECT COUNT(*) as count FROM rooms;`
+  ).then((result) => result[0].count);
+
+  let roomLimit = numRooms * 0.01;
+  let characterLimit = charactersToPrompt.length * 0.005;
+  let numToPrompt = Math.min(roomLimit, characterLimit);
+  numToPrompt = Math.min(numToPrompt, 1);
 
   for (let i = 0; i < numToPrompt; i++) {
     let lngth = charactersToPrompt.length;

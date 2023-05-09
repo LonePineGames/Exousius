@@ -318,6 +318,10 @@
       box-shadow: 0 0 0.5rem black;
     }
 
+    .message .suggestion {
+      margin: 0;
+    }
+
     .suggestion:hover {
       box-shadow: 0 0 0.5rem #777;
     }
@@ -476,16 +480,24 @@
     const socket = io();
 
     // Get the current username from Local Storage
+    //let myName = 'Player';
     let myName = localStorage.getItem('character');
     let characterInfo = '';
     if (myName) {
+      console.log('emit character', myName);
       socket.emit('character', myName);
     } else {
       myName = 'Player';
       localStorage.setItem('character', myName);
     }
 
+    socket.on('connect', () => {
+      console.log('emit character', myName);
+      socket.emit('character', myName);
+    });
+
     socket.on('reconnect', () => {
+      console.log('emit character', myName);
       socket.emit('character', myName);
     });
 
@@ -579,12 +591,40 @@
     }
 
     document.getElementById('message-input').addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
+        if (event.key === 'Enter' && !event.shiftKey) {
           socket.emit('message', {text: event.target.value});
           event.target.value = '';
           event.preventDefault();
         }
     });
+
+    function maybeSummonPlayer(action) {
+      console.log('maybeSummonPlayer', action, myName, characterInfo);
+      if (characterInfo === '') return;
+      if (myName !== 'Player') return;
+      if (!action.startsWith('%summon ')) return;
+
+      let summonName = action.substring(8, action.length - 1);
+      if (summonName === 'Player') return;
+      if (summonName === 'Odel') return;
+      if (summonName === 'Narrator') return;
+
+      // Look for the phrase "Name: Character Name" in characterInfo
+      let characterName = '';
+      let characterNameNdx = characterInfo.indexOf('Name: ');
+      if (characterNameNdx === -1) return;
+      characterNameNdx += 6;
+      let characterNameEndNdx = characterInfo.indexOf('\n', characterNameNdx);
+      if (characterNameEndNdx === -1) return;
+      characterName = characterInfo.substring(characterNameNdx, characterNameEndNdx);
+
+      if (characterName === summonName) {
+        console.log('summoning', summonName);
+        setTimeout(() => {
+          socket.emit('summon', characterInfo);
+        }, 5000);
+      }
+    }
 
     function messageReceived(message) {
       // Show or hide the typing indicator
@@ -638,12 +678,8 @@
                 });
                 messageElement.appendChild(butt);
 
-                if (myName === 'Player' && actionName === 'summon' && action !== '%summon Player%' && characterInfo != '') {
-                  console.log("summon", characterInfo);
-                  //setTimeout(() => {
-                    socket.emit('summon', characterInfo);
-                  //}, 5000);
-                }
+                console.log("maybeSummonPlayer");
+                maybeSummonPlayer(action);
               }
             }
 
@@ -658,7 +694,6 @@
         }
       }
 
-      console.log(message, myName);
       if (message.character === 'Narrator') {
         messageElement.classList.add('system');
       } else if (message.character === myName) {
@@ -702,7 +737,7 @@
     socket.on('background-image', function(img) {
       let chatElement = document.getElementById('chat-container');
 
-      chatElement.style.background = `linear-gradient(180deg, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.5)), url(${img}), #222`;
+      chatElement.style.background = `linear-gradient(180deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(${img}), #222`;
       chatElement.style.backgroundSize = 'cover';
       chatElement.style.backgroundPosition = 'center';
 
