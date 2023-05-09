@@ -10,7 +10,7 @@ const RomanNumerals = require('roman-numerals');
 const { promptBot, punchUpNarration, describePlace, createPicture, listMobs, promptCharacterBuilder } = require('./prompt');
 const { listNames } = require('./names');
 
-let gameRate = 10000;
+let gameRate = 20000;
 let socketTable = [];
 const maxShards = 100;
 
@@ -1354,6 +1354,12 @@ async function summonPlayer(db, socket, characterInfoText, cbHistory) {
     );
   }
 
+  await send(db, {
+    room: 'origin',
+    character: 'Narrator',
+    text: `${characterInfo.name} has been summoned. ${characterInfo.name} enters the origin, the source of all places in this world.`,
+  });
+
   console.log('summonPlayer calls connectCharacter');
   await connectCharacter(db, socket, characterInfo.name);
 
@@ -1382,12 +1388,6 @@ async function summonPlayer(db, socket, characterInfoText, cbHistory) {
     let seenMessages = await recentMessages(db, character, 100);
     socket.emit('previous messages', seenMessages);
   }
-
-  await send(db, {
-    room: 'origin',
-    character: 'Narrator',
-    text: `${characterInfo.name} has been summoned. ${characterInfo.name} enters the origin, the source of all places in this world.`,
-  });
 
   setTimeout(async () => {
     socket.emit('message', {
@@ -1617,11 +1617,11 @@ async function plantShard(db) {
   if (shardCount >= maxShards) {
     return;
   } else if (shardCount > 15) {
-    if (Math.random() > 0.1) {
+    if (Math.random() > 0.2) {
       return;
     }
   } else {
-    if (Math.random() > 0.2) {
+    if (Math.random() > 0.4) {
       return;
     }
   }
@@ -1775,9 +1775,9 @@ async function runPrompts(db) {
     `SELECT COUNT(*) as count FROM rooms;`
   ).then((result) => result[0].count);
 
-  let roomLimit = numRooms * 0.01;
-  let characterLimit = charactersToPrompt.length * 0.005;
-  let userLimit = numUsers * 0.01;
+  let roomLimit = numRooms * 0.001;
+  let characterLimit = charactersToPrompt.length * 0.00025;
+  let userLimit = numUsers * 0.001;
   let numToPrompt = Math.min(roomLimit, characterLimit, userLimit);
   numToPrompt = Math.min(numToPrompt, 1);
 
