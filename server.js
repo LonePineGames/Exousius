@@ -404,6 +404,17 @@ let actionHandlers = {
   },
 
   async search(db, character, action) {
+    if (Math.random() < 0.5) {
+      // Randomly fail
+      let text = Math.random() < 0.5 ? `${character.name} searched the ${character.room} for shards, but found nothing.` : `${character.name} searched the ${character.room}. ${character.name} found some useful items, but no shards.`;
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text,
+      });
+      return;
+    }
+
     let room = character.room;
     let shards = await db.get(
       `SELECT shards FROM rooms WHERE name = ?;`,
@@ -1447,8 +1458,8 @@ async function connectPlayer(db, socket) {
   }, 250);
 
   socket.on('set-rate', (rate) => {
-    console.log('setting rate to', rate);
-    gameRate = rate;
+    //console.log('setting rate to', rate);
+    //gameRate = rate;
   });
 
   socket.on('write-script', async (script) => {
@@ -1580,7 +1591,7 @@ async function spawnMobInRoom(db, room) {
   // randomly select a mob
   let mob = mobs[Math.floor(Math.random() * mobs.length)];
   let shards = Math.random() < 0.2 ? 1 : 0;
-  let hp = 2 + Math.floor(Math.random() * 6);
+  let hp = 1 + Math.floor(Math.random() * 4);
 
   const script = `I am a ${mob}, a low level mob. I started with ${hp} hp. I am aggressive and will immediately %strike%. I will not %disappear% easily. However, I may be talked out of violence.`;
 
@@ -1670,8 +1681,10 @@ async function runPrompts(db) {
   );
 
   let activeRooms = [];
+  let numUsers = 0;
   for (let character of characters) {
     if (character.role === 'mob') continue;
+    if (character.role === 'user') numUsers ++;
     if (!activeRooms.includes(character.room)) {
       activeRooms.push(character.room);
     }
@@ -1693,7 +1706,8 @@ async function runPrompts(db) {
 
   let roomLimit = numRooms * 0.01;
   let characterLimit = charactersToPrompt.length * 0.005;
-  let numToPrompt = Math.min(roomLimit, characterLimit);
+  let userLimit = numUsers * 0.01;
+  let numToPrompt = Math.min(roomLimit, characterLimit, userLimit);
   numToPrompt = Math.min(numToPrompt, 1);
 
   for (let i = 0; i < numToPrompt; i++) {

@@ -108,8 +108,8 @@ ${pronounHint}
 Improve the following narration. Keep the response brief, under 20 words. Preserve all details, especially numbers. Fix any grammatical mistakes, capitalization and pluralization issues, and so on. Add drama and enticing language. Don't include action commands (e.g. %go forest%). Only describe the events mentioned in the original narration. Use past tense. Connect the narration to the history and context. Make it sound like an old fairy tale.
 
 ### Example
-Original: Arkim healed Arkim for 2HP. Arkim searched the origin and found a shard. Arkim searched the origin for shards, but found nothing. rowdy bard struck Arkim.
-Response: After the battle, Arkim healed himself for 2HP. Then he turned to his most important task: the search for shards. For hours, he searched the dark void, fruitlessly... Until, finally, he found a shard! His spirits raised, he continued his search. But a second shard would be elusive, and Arkim became distracted. Rowdy bard suddenly attacked.
+Original: Arkim healed Arkim for 2HP. Arkim searched the origin and found a shard. Arkim searched the origin for shards. Arkim found some useful items, but no shards. rowdy bard struck Arkim.
+Response: After the battle, Arkim healed himself for 2HP. Then he turned to his most important task: the search for shards. For hours, he searched the dark void, fruitlessly... Until, finally, he found a shard! His spirits raised, he continued his search. But a second shard would be elusive, as Arkim's fervent search only yielded an old pickaxe. Rowdy bard suddenly attacked.
 
 ### History
 ${history.map((h) => `${h.character}: ${h.text}`).join('\n')}

@@ -721,13 +721,13 @@
       socket.emit('reset');
       const messages = document.getElementById('messages');
       messages.innerHTML = '';
-      socket.emit('set-rate', currentRate);
+      //socket.emit('set-rate', currentRate);
     }
 
     socket.on('reset', function() {
       const messages = document.getElementById('messages');
       messages.innerHTML = '';
-      socket.emit('set-rate', currentRate);
+      //socket.emit('set-rate', currentRate);
     });
 
     socket.on('room', function(room) {
@@ -879,13 +879,13 @@
 
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
-        socket.emit('set-rate', 0);
+        //socket.emit('set-rate', 0);
         currentRate = 0;
         // Highlight the 'pause' button
         document.getElementById(currentActiveButtonId).classList.remove('active');
         document.getElementById('rate-0').classList.add('active');
       } else {
-        socket.emit('set-rate', lastRate);
+        //socket.emit('set-rate', lastRate);
         currentRate = lastRate;
         // Highlight the last active button
         document.getElementById(currentActiveButtonId).classList.add('active');
