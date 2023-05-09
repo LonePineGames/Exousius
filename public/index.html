@@ -254,6 +254,7 @@
       overflow-y: auto;
 
       text-align: right;
+      transition: height 2s ease-in-out;
     }
 
     .nocharacter #suggestions {
@@ -430,6 +431,7 @@
       margin-bottom: -4rem;
       z-index: 2;
       width: 100%;
+      top: 0;
       left: 0;
       right: 0;
       max-width: 600px;
@@ -440,10 +442,11 @@
       align-items: center;
       padding: 0.5rem;
       box-sizing: border-box;
+      transition: top 2s ease-in-out;
     }
 
     .nocharacter #ui-container {
-      display: none;
+      top: -10rem;
     }
 
     .orb-container {

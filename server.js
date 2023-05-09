@@ -1549,7 +1549,7 @@ async function connectPlayer(db, socket) {
     if (socket.character === 'Player') return;
     let suggestions = await generateActionSuggestions(db, socket.character);
     socket.emit('suggestions', suggestions);
-  }, 250);
+  }, 1000);
 
   socket.on('set-rate', (rate) => {
     //console.log('setting rate to', rate);
