@@ -592,7 +592,7 @@
     }
 
     document.getElementById('message-input').addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' && !event.shiftKey) {
+        if (event.key === 'Enter') { // && !event.shiftKey) {
           socket.emit('message', {text: event.target.value});
           event.target.value = '';
           event.preventDefault();
