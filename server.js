@@ -960,6 +960,87 @@ let actionHandlers = {
     });
   },
 
+  async pace(db, character, action) {
+    if (character.role !== 'user') return;
+
+    if (action.text === '') {
+      let seconds = gameRate / 1000;
+
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `The world moved at the pace of one event every ${seconds} seconds.`
+      });
+      return;
+    }
+
+    let newRate = parseFloat(action.text) * 1000;
+
+    if (isNaN(newRate)) {
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `But ${character.name} couldn't change the pace because "${action.text}" was not a number.`
+      });
+      return;
+    }
+
+    let pause = newRate === 0;
+    let faster = newRate < gameRate;
+
+    if (pause) {
+      if (!spendShard(db, character)) {
+        await send(db, {
+          room: character.room,
+          character: 'Narrator',
+          text: `But ${character.name} couldn't pause the world because ${character.name} had no shards.`,
+        });
+        return;
+      }
+
+      gameRate = 0;
+      await send(db, {
+        room: character.room,
+        character: 'Narrator',
+        text: `${character.name} sacrificed a shard to pause the world.`,
+      });
+      return;
+    }
+
+    let text = '';
+    if (newRate < 1000) {
+      text += ` But ${character.name} couldn't speed up the world beyond one event every second.`;
+      newRate = 1000;
+    }
+
+    if (faster) {
+      if (!spendShard(db, character)) {
+        await send(db, {
+          room: character.room,
+          character: 'Narrator',
+          text: `But ${character.name} couldn't speed up the world because ${character.name} had no shards.`,
+        });
+        return;
+      }
+
+      text += ` ${character.name} sacrificed a shard to speed up the world.`;
+
+    } else {
+      text += ` ${character.name} slowed down the world.`;
+    }
+
+    gameRate = newRate;
+    let seconds = gameRate / 1000;
+    text += ` The world began to move at the pace of one event every ${seconds} seconds.`;
+    text = text.trim();
+
+    await send(db, {
+      room: character.room,
+      character: 'Narrator',
+      text,
+    });
+  },
+
   async disappear(db, character, action) {
     if (character.role !== 'mob') return;
 
