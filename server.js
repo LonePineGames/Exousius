@@ -1913,6 +1913,7 @@ async function promptCharacter(db, character) {
   }
 }
 
+/*
 async function runPrompts(db) {
   let characters = await db.all(
     `SELECT * FROM characters WHERE hp > 0;`
@@ -1956,6 +1957,42 @@ async function runPrompts(db) {
     let character = charactersToPrompt[ndx];
     await promptCharacter(db, character);
     charactersToPrompt.splice(ndx, 1);
+  }
+}
+*/
+
+async function runPrompts(db) {
+  let rooms = await db.all('SELECT * FROM rooms');
+  let characters = await db.all('SELECT * FROM characters WHERE hp > 0');
+
+  //let numUsers = 0;
+  for (let character of characters) {
+    if (character.role === 'mob') continue;
+    //if (character.role === 'user') numUsers ++;
+
+    let room = rooms.find((room) => room.name === character.room);
+    room.active = true;
+    //if (room === undefined) continue;
+    //if (character.role === 'user') room.users ++;
+  }
+
+  for (let room of rooms) {
+    if (!room.active) continue;
+
+    //let mobsToPrompt = Math.max(1, room.users);
+    //let botsToPrompt = Math.max(1, room.users);
+
+    let bots = characters.filter((character) => character.role === 'bot' && character.room === room.name);
+    if (bots.length > 0) {
+      let bot = bots[Math.floor(Math.random() * bots.length)];
+      promptCharacter(db, bot);
+    }
+
+    let mobs = characters.filter((character) => character.role === 'mob' && character.room === room.name);
+    if (mobs.length > 0) {
+      let mob = mobs[Math.floor(Math.random() * mobs.length)];
+      promptCharacter(db, mob);
+    }
   }
 }
 
