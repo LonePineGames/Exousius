@@ -12,6 +12,7 @@ const { listNames } = require('./names');
 
 let gameRate = 15000;
 let socketTable = [];
+let turns = true;
 const maxShards = 100;
 
 app.use(express.static('public'));
@@ -144,7 +145,7 @@ async function send(db, messageData) {
   ).then((result) => result.lastID);
 
   let charactersInRoom = await db.all(
-    `SELECT name FROM characters WHERE room = ? and hp > 0;`,
+    `SELECT name, role FROM characters WHERE room = ? and hp > 0;`,
     [message.room]
   );
 
@@ -153,6 +154,14 @@ async function send(db, messageData) {
       `INSERT INTO seen_messages (message_id, character_name) VALUES (?, ?);`,
       [message.id, character.name]
     );
+
+    if (turns && character.name === message.character && character.role === 'user') {
+      console.log("turn triggered");
+      // Trigger a turn
+      setTimeout(() => {
+        gameStep(db);
+      }, 2000);
+    }
   });
 
   io.to(message.room).emit('message', message);
@@ -969,7 +978,8 @@ let actionHandlers = {
       await send(db, {
         room: character.room,
         character: 'Narrator',
-        text: `The world moved at the pace of one event every ${seconds} seconds.`
+        text: turns ? 'The world moved in turns.' :
+          seconds > 0 ? `The world moved at the pace of one event every ${seconds} seconds.` : 'The world was paused.',
       });
       return;
     }
@@ -1030,10 +1040,48 @@ let actionHandlers = {
     }
 
     gameRate = newRate;
+    turns = false;
     let seconds = gameRate / 1000;
     text += ` The world began to move at the pace of one event every ${seconds} seconds.`;
     text = text.trim();
 
+    await send(db, {
+      room: character.room,
+      character: 'Narrator',
+      text,
+    });
+  },
+
+  async mode(db, character, action) {
+    if (character.role !== 'user') return;
+
+    let on = action.text === 'turns';
+    let off = action.text === 'time';
+    let blank = action.text === '';
+    let changed = (on && !turns) || (off && turns);
+    let text = '';
+    let verb = '';
+    let seconds = gameRate / 1000;
+
+    if (changed) {
+      text += ` ${character.name} used magic.`
+      turns = on; // how did I get myself into this
+      verb = 'began';
+    } else {
+      verb = 'continued';
+    }
+
+    if (turns) {
+      text += ` The world ${verb} to move in response to the players.`;
+    } else {
+      text += ` The world ${verb} to move at the pace of one event every ${seconds} seconds.`;
+    }
+
+    if (!changed && !blank) {
+      text += ` But ${character.name} couldn't change the mode. Valids modes are "turns" and "time".`;
+    }
+
+    text = text.trim();
     await send(db, {
       room: character.room,
       character: 'Narrator',
@@ -1496,6 +1544,7 @@ async function summonPlayer(db, socket, characterInfoText, cbHistory) {
     socket.emit('previous messages', seenMessages);
   }
 
+  // Tutorial
   setTimeout(async () => {
     socket.emit('message', {
       room: 'origin',
@@ -1508,10 +1557,11 @@ async function summonPlayer(db, socket, characterInfoText, cbHistory) {
 %strike% - to fight
 %heal% - to heal
 %summon Odel% (Cost: 1 shard) - Odel is good at searching for shards.
-%create ...% (Cost: 1 shard) - Creates a new land or location. ${characterInfo.name} may create anything they imagine. New lands usually have many shards to find.
+%create ...% (Cost: 1 shard) - Creates a new land or location. You may create anything you imagine. New lands often have many shards to find, so the cost of a shard is a good investment.
 %destroy% (Cost: 1 shard) - to destroy the land.
 %protect% (Cost: 1 shard) - to protect the land from minor enemies.
-%scry% (Cost: 1 shard) - to see what has happened here in the past.`
+%scry% (Cost: 1 shard) - to see what has happened here in the past.
+%pace 60% (Free) - to slow down the world.`
 
     });
   }, 5000);
@@ -1671,6 +1721,8 @@ async function connectPlayer(db, socket) {
   });
 }
 
+let lastStepTime = new Date();
+
 initializeDatabase().then((db) => {
   io.on('connection', async (socket) => {
     console.log('a user connected');
@@ -1682,15 +1734,15 @@ initializeDatabase().then((db) => {
     console.log(`listening on *:${PORT}`);
   });
 
-  function doGameStep() {
-    if (gameRate > 0) {
+  function gameLoop() {
+    setTimeout(gameLoop, 250);
+
+    let timeSinceLastStep = new Date() - lastStepTime;
+    if (!turns && timeSinceLastStep > gameRate) {
       gameStep(db);
-      setTimeout(doGameStep, gameRate);
-    } else {
-      setTimeout(doGameStep, 1000);
     }
   }
-  doGameStep();
+  gameLoop();
 
 }).catch((err) => {
   console.error(err);
@@ -1908,6 +1960,9 @@ async function runPrompts(db) {
 }
 
 async function gameStep(db) {
+  lastStepTime = new Date();
+  console.log('gameStep');
+  console.trace();
   await plantShard(db);
   await spawnMob(db);
   await runPrompts(db);
