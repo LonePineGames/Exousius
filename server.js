@@ -10,7 +10,7 @@ const RomanNumerals = require('roman-numerals');
 const { promptBot, punchUpNarration, describePlace, createPicture, listMobs, promptCharacterBuilder } = require('./prompt');
 const { listNames } = require('./names');
 
-let gameRate = 30000;
+let gameRate = 15000;
 let socketTable = [];
 const maxShards = 100;
 
@@ -587,6 +587,12 @@ let actionHandlers = {
       character: 'Narrator',
       text: `${character.name} used a shard and summoned ${summonInstance}.`,
     });
+
+    let summoned = await db.run(
+      'SELECT * FROM characters WHERE name = ?',
+      [summonInstance]
+    );
+    await announceCharacter(db, summoned);
   },
 
   async strike(db, character, action) {
@@ -1348,7 +1354,7 @@ async function summonPlayer(db, socket, characterInfoText, cbHistory) {
     {
       name: 'Odel',
       script: 'I am Odel. I am always loyal to my summoner. I %search% for shards. When I find shards, I keep searching in the same place. When I find nothing, I %go% to a different place. When I have 5 shards, I return.',
-      description: 'Odel is a petite and agile peasant, dressed in simple, earthy-toned clothing made from rough-woven fabric. Her long, braided hair is a deep chestnut color, framing her youthful face and sharp, hazel eyes. Odel wears a small pouch at her waist, where she keeps the shards she finds. She carries a trusty slingshot as her weapon, which she uses with surprising accuracy and skill.',
+      description: 'Odel was a petite and agile peasant, dressed in simple, earthy-toned clothing made from rough-woven fabric. Her long, braided hair was a deep chestnut color, framing her youthful face and sharp, hazel eyes. Odel wore a small pouch at her waist, where she kept the shards she found. Her only weapon was also her primary tool: a simple shovel.',
       title: 'She',
     },
 
