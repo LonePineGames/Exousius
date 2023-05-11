@@ -1,0 +1,583 @@
+:root {
+  --light-bg: #EEE;
+  --light-text: #333;
+  --alternate-bg: #FFF;
+  --red-bg: #FF1E1E; /*1E90FF;*/
+  --blue-bg: #1E90FF;
+  --green-bg: #1E901E;
+  --purple-bg: #FF1E90;
+  --white-bg: #FFF;
+  --primary-color: #b3d9ff;
+  --orange-accent: #FF901E;
+
+  --frame-bg: #333;
+  --chat-bg: #222;
+  --script-bg: #bf8c40;
+  --vh: 1vh;
+}
+
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  line-height: 1.25;
+}
+
+body {
+  background-color: var(--frame-bg);
+  font-family: 'Cardo', serif;
+  box-sizing: border-box;
+}
+
+#chat-container {
+  position: relative;
+  --push-up: 50px;
+  height: calc(var(--vh) + var(--push-up));
+  max-width: 600px;
+  margin: 0 auto;
+  background-color: var(--chat-bg);
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem;
+  box-sizing: border-box;
+  border-radius: 300px 300px 0 0;
+  margin-top: calc(0px - var(--push-up));
+  overflow: hidden;
+  box-shadow: 5rem 5rem 5rem black inset,
+    -1rem -1rem 2rem black,
+    -0.25rem -0.25rem 0.5rem black,
+    0.25rem 0.25rem 0.5rem #777;
+}
+
+.context-message, .message {
+  margin: 0 0 1rem 0;
+  padding: 0 0.75rem;
+  border-radius: 1rem 0 1rem 0;
+  animation: fadein 2s;
+}
+
+.message {
+  box-shadow: 0 0 0.5rem black;
+  background-color: rgba(0,0,0,0.5);
+  color: white;
+  width: fit-content;
+  text-align: left;
+  font-style: italic;
+}
+
+.message.system {
+  font-style: normal;
+}
+
+.hascharacter .message.system {
+  text-indent: 2rem;
+}
+
+/*
+.hascharacter .message.system::before {
+  content: "aaaa";
+  visibility: hidden;
+}
+*/
+
+.hascharacter .message.system .name {
+  display: none;
+  background-color: var(--frame-bg);
+  box-shadow: none;
+}
+
+.message.me {
+  text-align: right;
+  margin-left: auto;
+}
+
+.context-message {
+  margin: 0 0 5rem 0;
+  color: var(--primary-color);
+  text-shadow: 0 0 0.5rem var(--light-text);
+}
+
+.context-message h1 {
+  font-size: 2rem;
+  margin: 0 0 2rem 0;
+  text-align: center;
+}
+
+.context-message img {
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+  display: block;
+  margin-bottom: 2rem;
+}
+
+.context-message a {
+  color: var(--primary-color);
+  font-weight: bold;
+  font-size: 0.75rem;
+  text-align: right;
+  text-decoration: none;
+  display: block;
+}
+
+.context-message a:hover {
+  text-decoration: underline;
+}
+
+@keyframes fadein {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+#typing {
+  padding: 0 2rem 0.5rem 2rem;
+  animation: typing 1s infinite;
+}
+
+@keyframes typing {
+  0% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.5;
+  }
+}
+
+#player-name, .message .name {
+  margin: 0rem 0.25rem 0 -0.75rem;
+  padding: 0 0.5rem 0rem 0.5rem;
+
+  font-weight: bold;
+  font-style: normal;
+  text-transform: capitalize;
+  background-color: var(--frame-bg);
+  color: white;
+  border-radius: 1rem 0 1rem 0;
+  box-shadow: 0 0 0.5rem black;
+  text-shadow: 0 0 0.5rem black;
+}
+
+#player-name {
+  position:relative;
+  top: 0.5rem;
+  margin: -1rem 0 -1rem 0;
+  width: fit-content;
+}
+
+#message-container {
+  flex-grow: 1;
+  overflow-y: auto;
+  height: 100%;
+}
+
+#message-input {
+  height: 3rem;
+  margin-top: 1rem;
+  width: 100%;
+
+  border: none;
+  border-radius: 1rem 0 1rem 0;
+  padding: 0.5rem;
+  font-size: 1rem; /* This should prevent zooming on iOS */
+  box-sizing: border-box;
+  background-color: var(--frame-bg);
+  color: white;
+  font-family: 'Cardo', serif;
+  font-style: italic;
+}
+
+#toolbar {
+  display: none;
+  /*display: flex;*/
+  justify-content: space-between;
+  background-color: var(--red-bg);
+  border-radius: 1rem 0 1rem 0;
+}
+
+.toolbar-button {
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  color: var(--light-text);
+  cursor: pointer;
+}
+
+.active {
+  color: var(--primary-color);
+}
+
+.toolbar-button:hover {
+  color: var(--primary-color);
+}
+
+#hp, #shards, #scriptsButton {
+  border-radius: 0 0 100% 100%;
+  font-size: 2rem;
+  text-align: center;
+  line-height: 2rem;
+  padding: 1rem;
+  color: white;
+  text-shadow: 0 0 0.5rem black;
+}
+
+#scriptsButton {
+  top: 9rem;
+  left: 2rem;
+  background: none;
+}
+
+#scriptsButton:hover {
+  background-color: var(--red-bg);
+}
+
+#suggestions {
+  margin-top: 0.5rem;
+  height: 11rem;
+  overflow-y: auto;
+
+  text-align: right;
+  transition: height 2s ease-in-out;
+}
+
+.nocharacter #suggestions {
+  height: 0;
+}
+
+#suggestions.cooldown {
+  cursor: not-allowed;
+}
+
+@keyframes cooldownAnimation {
+  0% {
+    opacity: 1;
+  }
+  10% {
+    opacity: 0.1;
+  }
+  20% {
+    opacity: 0.2;
+  }
+  30% {
+    opacity: 0.1;
+  }
+  40% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.1;
+  }
+  60% {
+    opacity: 0.3;
+  }
+  70% {
+    opacity: 0.1;
+  }
+  80% {
+    opacity: 0.5;
+  }
+  90% {
+    opacity: 0.1;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+#suggestions.cooldown {
+  transition: opacity 0.5s ease-in-out;
+  animation: cooldownAnimation 10s;
+}
+
+#suggestions {
+  opacity: 1;
+}
+
+.suggestion {
+  margin: 0.25rem 0;
+  padding: 0 0.5rem 0rem 0.5rem;
+  width: fit-content;
+
+  font-weight: bold;
+  background-color: black;
+  text-shadow: 0 0 0.5rem black;
+  color: white;
+  border-radius: 1rem 0 1rem 0;
+  border: none;
+  box-shadow: 0 0 0.5rem black;
+  transition: background-color 1s ease-in-out, color 1s ease-in-out;
+}
+
+.message .suggestion {
+  margin: 0;
+}
+
+.suggestion:hover {
+  box-shadow: 0 0 0.5rem #777;
+}
+
+.suggestion-go {
+  background-color: var(--green-bg);
+}
+
+.suggestion-summon {
+  background-color: var(--purple-bg);
+}
+
+.suggestion-scry {
+  background-color: var(--purple-bg);
+}
+
+.suggestion-protect {
+  background-color: var(--purple-bg);
+}
+
+.suggestion-search {
+  background-color: var(--blue-bg);
+}
+
+.suggestion-strike {
+  background-color: var(--red-bg);
+}
+
+.suggestion-heal {
+  background-color: var(--white-bg);
+  color: var(--red-bg);
+}
+
+.suggestion-give {
+  background-color: var(--blue-bg);
+}
+
+.suggestion-create {
+  background-color: var(--purple-bg);
+}
+
+#suggestions.cooldown .suggestion {
+  background-color: var(--frame-bg);
+  color: #ccc;
+}
+
+#scriptsPanel {
+  display: none;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  background-color: rgba(0,0,0,0.5);
+}
+
+#scriptsContainer {
+  display: flex;
+  max-width: 24rem;
+  margin: 10rem auto;
+  flex-direction: column;
+  padding: 1rem;
+}
+
+button.script {
+  display: flex;
+  flex-direction: column;
+  font-family: 'Cardo', serif;
+  border: none;
+  line-height: 1.25rem;
+  font-size: 1rem;
+  min-height: 24rem;
+  background-color: var(--script-bg);
+  border-radius: 0.5rem;
+  color: black;
+  margin: 2rem 0;
+  padding: 4rem;
+  box-shadow: 1rem 1rem 2rem black,
+    -0.25rem -0.25rem 0.5rem black inset;
+}
+
+.script .name {
+  text-transform: capitalize;
+  text-align: center;
+  font-weight: bold;
+  font-size: 2rem;
+  height: 4rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid black;
+}
+
+.script .text {
+  text-align: justify;
+  font-size: 1rem;
+  line-height: 1.25rem;
+}
+
+#ui-container {
+  position: fixed;
+  height: 4rem;
+  margin-bottom: -4rem;
+  z-index: 2;
+  width: 100%;
+  top: 0;
+  left: 0;
+  right: 0;
+  max-width: 600px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  box-sizing: border-box;
+  transition: top 2s ease-in-out;
+}
+
+.nocharacter #ui-container {
+  top: -10rem;
+}
+
+.orb-container {
+  position: relative;
+  display: block;
+  margin: 2rem 0 0 -1rem;
+  width: 6rem;
+  height: 6rem;
+  z-index: 1;
+
+  font-size: 2rem;
+  text-align: center;
+  color: white;
+  text-shadow: 0 0 0.5rem black;
+}
+
+.empty-orb, .full-orb-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.full-orb-container {
+  overflow: hidden;
+  transition: clip-path 5s ease-in-out;
+}
+
+.full-orb {
+  width: 100%;
+  height: 100%;
+}
+
+#hp {
+  position: absolute;
+  color: #ccc;
+  text-shadow: 0 0 1rem black;
+  font-size: 4rem;
+  line-height: 4rem;
+  width: 4rem;
+  text-align: center;
+}
+
+#hp.low {
+  color: var(--red-bg);
+}
+
+#shards {
+  position: absolute;
+  top: -1rem;
+  right: 0;
+  z-index: 1;
+  width: 6rem;
+  height: 8rem;
+  box-sizing: border-box;
+
+  background-image: url("shard.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+
+  padding: 1rem;
+  color: #ccc;
+  text-shadow: 0 0 1rem black;
+  text-align: right;
+  font-size: 4rem;
+  line-height: 6rem;
+
+  transition: text-shadow 0.5s ease-in-out, opacity 0.5s ease-in-out;
+}
+
+#shards.flash {
+  animation: flash 2s;
+}
+
+@keyframes flash {
+  0% {
+    text-shadow: 0 0 1rem black;
+  }
+  25% {
+    text-shadow: 0 0 2rem white;
+    opacity: 1;
+  }
+  50% {
+    text-shadow: 0 0 2rem black;
+    opacity: 0.5;
+  }
+  75% {
+    text-shadow: 0 0 2rem white;
+    opacity: 1;
+  }
+  100% {
+    text-shadow: 0 0 1rem black;
+  }
+}
+
+#room {
+  position: absolute;
+  top: 0.5rem;
+  left: 2rem;
+  right: 2rem;
+  margin: 0 auto;
+  max-width: 250px;
+  overflow: hidden;
+  padding: 0.5rem 1rem;
+  color: white;
+  font-size: 2rem;
+  text-transform: capitalize;
+  text-align: center;
+  text-shadow: 0 0 1rem black;
+  background-color: var(--frame-bg);
+  border-radius: 0.5rem 0 0.5rem 0;
+  box-shadow: 5rem 5rem 5rem black,
+    -0.25rem -0.25rem 0.5rem black inset,
+    0.25rem 0.25rem 0.5rem #777 inset;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 0.5rem;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--red-bg);
+  border-radius: 0.25rem;
+}
+
+html body button {
+  font-family: "Cardo", serif;
+  font-size: 1rem;
+  outline: none;
+  border: none;
+  cursor: pointer;
+}
+
+html body button:hover {
+  box-shadow: 0 0 0.5rem #777;
+}
+
+#chat-container, body, #room {
+  transition: opacity 1s ease-in-out;
+  background-size: cover;
+  background-position: center;
+}
+
