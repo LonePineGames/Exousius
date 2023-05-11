@@ -13,14 +13,17 @@ const { listNames } = require('./names');
 const i18next = require('i18next');
 const Backend = require('i18next-fs-backend');
 
+const enTranslation = require('./locales/en/translation.js');
+const thTranslation = require('./locales/th/translation.js');
 i18next
   .use(Backend)
   .init({
     lng: 'th', // default language
     fallbackLng: 'en',
-    backend: {
-      loadPath: './locales/{{lng}}/translation.json',
-    }
+    resources: {
+      en: { translation: enTranslation },
+      th: { translation: thTranslation },
+    },
   });
 
 let gameRate = 15000;
@@ -224,8 +227,8 @@ async function executeAction(db, character, action) {
   if (actionHandler) {
     await actionHandler(db, character, action);
   } else {
-    let actionText = action.text === '' ? `%${action.name}%` :
-      `%${action.name} ${action.text}%`;
+    let actionText = action.text === '' ? `${action.name}` :
+      `${action.name} ${action.text}`;
     await send(db, {
       room: character.room,
       character: 'Narrator',
@@ -1446,6 +1449,7 @@ async function characterBuilder(socket, cbHistory, msg) {
     sendRandomRoomImage(socket);
   }
 
+  if (!ai && cbHistory.length > 3) return;
   if (cbHistory.length > 1) {
     let response = ai ? await promptCharacterBuilder(cbHistory) : i18next.t('character.selfSummonInstructions');
     let narratorMsg = {
