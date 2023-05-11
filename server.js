@@ -158,6 +158,10 @@ async function send(db, messageData) {
     }
   }
 
+  if (messageData.speaker) {
+    messageData.character = messageData.speaker;
+  }
+
   if (messageData.key) {
     messageData.text = i18next.t(messageData.key, messageData);
   }
@@ -230,9 +234,10 @@ async function executeAction(db, character, action) {
     let actionText = action.text === '' ? `${action.name}` :
       `${action.name} ${action.text}`;
     await send(db, {
-      room: character.room,
-      character: 'Narrator',
-      text: `${character.name} did: ${actionText}`,
+      speaker: 'Narrator',
+      key: 'action.did',
+      actor: character,
+      actionText,
     });
   }
 }
@@ -312,9 +317,10 @@ let actionHandlers = {
     const previousRoom = character.room;
     if (room === previousRoom) {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `But ${character.name} was already in the ${room}.`,
+        speaker: 'Narrator',
+        key: 'go.alreadyThere',
+        actor: character,
+        targetRoom: room,
       });
       return;
     }
@@ -326,18 +332,22 @@ let actionHandlers = {
 
     if (!roomData) {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `But ${character.name} couldn't go to the ${room} because it didn't exist.`,
+        speaker: 'Narrator',
+        key: 'go.didntExist',
+        actor: character,
+        targetRoom: room,
       });
       return;
     }
 
     let message = {
+      key: 'go.success',
       room: room,
-      character: 'Narrator',
-      text: `${character.name} traveled to the ${room}.`,
+      speaker: 'Narrator',
+      actor: character,
+      targetRoom: room,
     };
+    message.text = i18next.t('go.success', message);
     message.text = await punchUp(db, message);
 
     await db.run(
@@ -371,9 +381,11 @@ let actionHandlers = {
 
     if (roomName === '...') {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `But first ${character.name} needed to determine what location to create. Perhaps %create ancient forest% or %create secret tavern%?`,
+        speaker: 'Narrator',
+        key: 'create.didntKnow',
+        actor: character,
+        targetRoom: roomName,
+        //text: `But first ${character.name} needed to determine what location to create. Perhaps %create ancient forest% or %create secret tavern%?`,
       });
       return;
     }
@@ -385,18 +397,22 @@ let actionHandlers = {
 
     if (roomExists) {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `But ${character.name} couldn't create the ${roomName} because it already existed.`,
+        speaker: 'Narrator',
+        key: 'create.alreadyExisted',
+        actor: character,
+        targetRoom: roomName,
+        //text: `But ${character.name} couldn't create the ${roomName} because it already existed.`,
       });
       return;
     }
 
     if (!await spendShard(db, character)) {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `But ${character.name} couldn't create the ${roomName} because they don't have any shards.`,
+        speaker: 'Narrator',
+        key: 'create.noShards',
+        actor: character,
+        targetRoom: roomName,
+        //text: `But ${character.name} couldn't create the ${roomName} because they don't have any shards.`,
       });
       return;
     }
@@ -418,9 +434,12 @@ let actionHandlers = {
     };
 
     await send(db, {
+      speaker: 'Narrator',
+      key: 'create.success',
+      actor: character,
       room: character.room,
-      character: 'Narrator',
-      text: `${character.name} used a shard and created the ${roomName}.`,
+      targetRoom: roomName,
+      //text: `${character.name} used a shard and created the ${roomName}.`,
     });
 
     let history = await db.all(
@@ -442,15 +461,14 @@ let actionHandlers = {
     );
 
     await send(db, {
-      room: character.room,
-      character: character.name,
+      actor: character,
       text: `%go ${roomName}%`,
     });
 
     if (ai) {
       room.mobs = await listMobs(room);
     } else {
-      room.mobs = [i18next.t('place.mob')];
+      room.mobs = i18next.t('place.mob');
     }
     await db.run(
       `UPDATE rooms SET mobs = ? WHERE id = ?;`,
@@ -494,9 +512,9 @@ let actionHandlers = {
       let key = Math.random() < 0.5 ? 'search.fail' : 'search.foundItems';
       //let text = Math.random() < 0.5 ? `${character.name} searched the ${character.room} for shards, but found nothing.` : `${character.name} searched the ${character.room}. ${character.name} found some useful items, but no shards.`;
       await send(db, {
-        character: 'Narrator',
-        actor: character,
+        speaker: 'Narrator',
         key,
+        actor: character,
       });
       return;
     }
@@ -519,9 +537,10 @@ let actionHandlers = {
       );
 
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `${character.name} searched the ${character.room} and found a shard.`,
+        speaker: 'Narrator',
+        key: 'search.foundShard',
+        actor: character,
+        //text: `${character.name} searched the ${character.room} and found a shard.`,
       });
 
       let characterShards = await db.get(
@@ -535,9 +554,10 @@ let actionHandlers = {
 
     } else {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `${character.name} searched the ${character.room} for shards, but found nothing.`,
+        speaker: 'Narrator',
+        key: 'search.fail',
+        actor: character,
+        //text: `${character.name} searched the ${character.room} for shards, but found nothing.`,
       });
     }
   },
@@ -545,26 +565,29 @@ let actionHandlers = {
   async destroy(db, character, action) {
     if (character.room === 'origin') {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `But no one can destroy the origin, not even ${character.name}.`,
+        speaker: 'Narrator',
+        key: 'destroy.cantOrigin',
+        actor: character,
+        //text: `But no one can destroy the origin, not even ${character.name}.`,
       });
       return;
     }
 
     if (!await spendShard(db, character)) {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `But ${character.name} couldn't destroy the ${character.room} because they don't have any shards.`,
+        speaker: 'Narrator',
+        key: 'destroy.noShards',
+        actor: character,
+        //text: `But ${character.name} couldn't destroy the ${character.room} because they don't have any shards.`,
       });
       return;
     }
 
     await send(db, {
-      room: character.room,
-      character: 'Narrator',
-      text: `${character.name} used a shard and destroyed the ${character.room}.`,
+      speaker: 'Narrator',
+      key: 'destroy.success',
+      actor: character,
+      //text: `${character.name} used a shard and destroyed the ${character.room}.`,
     });
 
     const charactersInRoom = await db.all(
@@ -594,18 +617,22 @@ let actionHandlers = {
 
     if (script === undefined) {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `But ${character.name} couldn't summon ${summonName} because there isn't a script named ${summonName}.`,
+        speaker: 'Narrator',
+        key: 'summon.noScript',
+        actor: character,
+        summonName,
+        //text: `But ${character.name} couldn't summon ${summonName} because there isn't a script named ${summonName}.`,
       });
       return;
     }
 
     if (!await spendShard(db, character)) {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `But ${character.name} couldn't summon ${summonName} because they don't have any shards.`,
+        speaker: 'Narrator',
+        key: 'summon.noShards',
+        actor: character,
+        summonName,
+        //text: `But ${character.name} couldn't summon ${summonName} because they don't have any shards.`,
       });
       return;
     }
@@ -642,9 +669,11 @@ let actionHandlers = {
     });
 
     await send(db, {
-      room: character.room,
-      character: 'Narrator',
-      text: `${character.name} used a shard and summoned ${summonInstance}.`,
+      speaker: 'Narrator',
+      key: 'summon.success',
+      actor: character,
+      summonName: summonInstance,
+      //text: `${character.name} used a shard and summoned ${summonInstance}.`,
     });
 
     let summoned = await db.run(
@@ -679,9 +708,11 @@ let actionHandlers = {
 
     if (potentialTargets.length === 0) {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `But ${character.name} couldn't strike ${targetName} because ${targetName} did't exist`,
+        speaker: 'Narrator',
+        key: 'strike.badName',
+        actor: character,
+        targetName,
+        //text: `But ${character.name} couldn't strike ${targetName} because ${targetName} did't exist`,
       });
       return;
     }
@@ -689,11 +720,15 @@ let actionHandlers = {
     potentialTargets = potentialTargets.filter((target) => target.hp > 0);
 
     if (potentialTargets.length === 0) {
+      /*
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `But ${character.name} couldn't strike ${targetName} because ${targetName} was already dead.`,
+        speaker: 'Narrator',
+        key: 'strike.alreadyDead',
+        actor: character,
+        targetName,
+        //text: `But ${character.name} couldn't strike ${targetName} because ${targetName} was already dead.`,
       });
+      */
       return;
     }
 
@@ -701,18 +736,22 @@ let actionHandlers = {
 
     if (potentialTargets.length === 0) {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `But ${character.name} couldn't strike ${targetName} because ${targetName} wasn't in the ${character.room}`,
+        speaker: 'Narrator',
+        key: 'strike.notInRoom',
+        actor: character,
+        targetName,
+        //text: `But ${character.name} couldn't strike ${targetName} because ${targetName} wasn't in the ${character.room}`,
       });
       return;
     }
 
     if (Math.random() < 0.5) {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `${character.name} tried to strike ${targetName} but missed.`,
+        speaker: 'Narrator',
+        key: targetName === '' ? 'strike.missed' : 'strike.target.missed',
+        actor: character,
+        targetName,
+        //text: `${character.name} tried to strike ${targetName} but missed.`,
       });
       return;
     }
@@ -739,17 +778,19 @@ let actionHandlers = {
       }
     }
 
-    let message = `${character.name} struck ${target.name} for ${damage} damage. ${target.name} now has ${target.hp} HP.`;
+    /*
+    let message = `${character.name} struck ${target.name} for ${damage} damage.`;
     if (sacrifice > 0) {
       const inVain = target.hp <= 0 ? ', but it was not enough' : '';
       message += ` ${target.name} sacrificed ${sacrifice} shards to stay alive${inVain}.`;
     }
+    */
 
     await db.run(
       `UPDATE characters SET hp = ?, shards = ? WHERE id = ?;`,
       [target.hp, target.shards, target.id]
     );
-    console.log(target, message);
+    //console.log(target, message);
     socketTable.filter((socket) => socket.character === target.name).forEach((socket) => {
       console.log("updating browser");
       socket.emit('hp', target.hp);
@@ -757,7 +798,7 @@ let actionHandlers = {
     });
 
     if (target.hp <= 0) {
-      message += ` ${target.name} died.`;
+      //message += ` ${target.name} died.`;
 
       if (target.role === 'mob') {
         await db.run(
@@ -767,10 +808,19 @@ let actionHandlers = {
       }
     }
 
+    if (targetName === '') {
+      targetName = target.name;
+    }
+
+    let key = target.hp <= 0 ?
+      sacrifice > 0 ? 'strike.hit.sacrifice.kill' : 'strike.hit.kill' :
+      sacrifice > 0 ? 'strike.hit.sacrifice' : 'strike.hit';
+
     await send(db, {
-      room: character.room,
-      character: 'Narrator',
-      text: message,
+      speaker: 'Narrator',
+      key,
+      actor: character,
+      targetName, damage, sacrifice,
     });
   },
 
@@ -787,41 +837,76 @@ let actionHandlers = {
 
     if (target === undefined) {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `But ${character.name} couldn't heal ${targetName} because ${targetName} didn't exist.`,
+        speaker: 'Narrator',
+        key: 'heal.badName',
+        actor: character,
+        targetName,
+        //text: `But ${character.name} couldn't heal ${targetName} because ${targetName} didn't exist.`,
       });
       return;
     }
 
     if (target.shards < 0) {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `But ${character.name} couldn't heal ${target.name} because ${target.name} had already returned.`,
+        speaker: 'Narrator',
+        key: 'heal.alreadyReturned',
+        actor: character,
+        targetName,
+        //text: `But ${character.name} couldn't heal ${target.name} because ${target.name} had already returned.`,
       });
       return;
     }
 
     if (target.room !== character.room) {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `But ${character.name} couldn't heal ${target.name} because ${target.name} wasn't in the ${character.room}`,
+        speaker: 'Narrator',
+        key: 'heal.notInRoom',
+        actor: character,
+        targetName,
+        //text: `But ${character.name} couldn't heal ${target.name} because ${target.name} wasn't in the ${character.room}`,
       });
       return;
     }
 
     if (target.hp >= 10) {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `But ${character.name} couldn't heal ${target.name} because ${target.name} was already at full health.`,
+        speaker: 'Narrator',
+        key: 'heal.alreadyFull',
+        actor: character,
+        targetName,
+        //text: `But ${character.name} couldn't heal ${target.name} because ${target.name} was already at full health.`,
       });
       return;
     }
 
-    let heal = Math.ceil(1 + character.shards / 2);
+    let heal = Math.ceil(1 + (character.shards / 2) * Math.random());
+
+    //let text = '';
+    let key = 'heal.success';
+    if (character.name === target.name) {
+      let inRoom = await db.all(
+        `SELECT COUNT(*) as inRoom FROM characters WHERE room = ? and hp > 0 and role = 'mob';`,
+        [character.room]
+      ).then((rows) => rows[0].inRoom);
+
+      if (inRoom === 0) {
+        key = 'heal.rest';
+        heal *= 2;
+      } else {
+        key = 'heal.self';
+      }
+      /*
+      if (inRoom === 0) {
+        text = `${character.name} rested for a few hours, ate some food and tended to their wounds. ${character.name} healed ${heal}HP.`;
+      } else {
+        text = `${character.name} healed themselves for ${heal}HP.`;
+      }
+      */
+    } else {
+      key = 'heal.other';
+      //`${character.name} healed ${target.name} for ${heal}HP.`;
+    }
+
     heal = Math.min(heal, 10 - target.hp);
     console.log(character, target, heal);
     target.hp += heal;
@@ -831,28 +916,14 @@ let actionHandlers = {
       [target.hp, target.id]
     );
 
-    let text = '';
-    if (character.name === target.name) {
-      let inRoom = await db.all(
-        `SELECT COUNT(*) as inRoom FROM characters WHERE room = ? and hp > 0 and role = 'mob';`,
-        [character.room]
-      ).then((rows) => rows[0].inRoom);
-
-      if (inRoom === 0) {
-        text = `${character.name} rested for a few hours, ate some food and tended to their wounds. ${character.name} healed ${heal}HP.`;
-      } else {
-        text = `${character.name} healed themselves for ${heal}HP.`;
-      }
-    } else {
-      `${character.name} healed ${target.name} for ${heal}HP.`;
-    }
-
-    text += ` ${character.name} now has ${target.hp}/10HP.`;
+    //text += ` ${character.name} now has ${target.hp}/10HP.`;
 
     await send(db, {
-      room: character.room,
-      character: 'Narrator',
-      text,
+      speaker: 'Narrator',
+      key,
+      actor: character,
+      targetName,
+      heal,
     });
 
     socketTable.filter((socket) => socket.character === target.name).forEach((socket) => {
@@ -867,18 +938,22 @@ let actionHandlers = {
 
     if (targetName == '' || targetName == character.name) {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `${character.name} switched ${number} shards between their hands.`,
+        speaker: 'Narrator',
+        key: 'give.self',
+        actor: character,
+        number,
+        //text: `${character.name} switched ${number} shards between their hands.`,
       });
       return;
     }
 
-    if (character.shards <= 0) {
+    if (character.shards <= number) {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `But ${character.name} couldn't charge because ${character.name} had no shards.`,
+        speaker: 'Narrator',
+        key: 'give.noShards',
+        actor: character,
+        targetName, number,
+        //text: `But ${character.name} couldn't charge because ${character.name} had no shards.`,
       });
       return;
     }
@@ -890,35 +965,43 @@ let actionHandlers = {
 
     if (target === undefined) {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `But ${character.name} couldn't give shards to ${targetName} because ${targetName} didn't exist.`,
+        speaker: 'Narrator',
+        key: 'give.badName',
+        actor: character,
+        targetName, number,
+        //text: `But ${character.name} couldn't give shards to ${targetName} because ${targetName} didn't exist.`,
       });
       return;
     }
 
     if (target.shards < 0) {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `But ${character.name} couldn't give shards to ${target.name} because ${target.name} had already returned.`,
+        speaker: 'Narrator',
+        key: 'give.alreadyReturned',
+        actor: character,
+        targetName, number,
+        //text: `But ${character.name} couldn't give shards to ${target.name} because ${target.name} had already returned.`,
       });
       return;
     }
 
     if (target.room !== character.room) {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `But ${character.name} couldn't give shards to ${target.name} because ${target.name} wasn't in the ${character.room}`,
+        speaker: 'Narrator',
+        key: 'give.notInRoom',
+        actor: character,
+        targetName, number,
+        //text: `But ${character.name} couldn't give shards to ${target.name} because ${target.name} wasn't in the ${character.room}`,
       });
       return;
     }
 
     await send(db, {
-      room: character.room,
-      character: 'Narrator',
-      text: `${character.name} gave ${target.name} ${number} shards.`,
+      speaker: 'Narrator',
+      key: 'give.success',
+      actor: character,
+      targetName, number,
+      //text: `${character.name} gave ${target.name} ${number} shards.`,
     });
 
     target.shards += number;
@@ -946,9 +1029,10 @@ let actionHandlers = {
   async scry(db, character, action) {
     if (!spendShard(db, character)) {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `But ${character.name} couldn't scry because ${character.name} had no shards.`,
+        speaker: 'Narrator',
+        key: 'scry.noShards',
+        actor: character,
+        //text: `But ${character.name} couldn't scry because ${character.name} had no shards.`,
       });
       return;
     }
@@ -969,9 +1053,10 @@ let actionHandlers = {
     });
 
     await send(db, {
-      room: character.room,
-      character: 'Narrator',
-      text: `${character.name} sacrificed a shard to look into the past. ${character.name} can now see everything that has ever happened in the ${character.room}.`,
+      speaker: 'Narrator',
+      key: 'scry.success',
+      actor: character,
+      //text: `${character.name} sacrificed a shard to look into the past. ${character.name} can now see everything that has ever happened in the ${character.room}.`,
     });
 
     socketTable.filter((socket) => socket.character === character.name).forEach(async (socket) => {
@@ -984,9 +1069,10 @@ let actionHandlers = {
   async protect(db, character, action) {
     if (!spendShard(db, character)) {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `But ${character.name} couldn't protect the ${character.room} because ${character.name} had no shards.`,
+        speaker: 'Narrator',
+        key: 'protect.noShards',
+        actor: character,
+        //text: `But ${character.name} couldn't protect the ${character.room} because ${character.name} had no shards.`,
       });
       return;
     }
@@ -999,9 +1085,10 @@ let actionHandlers = {
 
     if (previousMobs.length === 0) {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `But ${character.name} couldn't protect the ${character.room} because there were no creatures to protect it from.`,
+        speaker: 'Narrator',
+        key: 'protect.noMobs',
+        actor: character,
+        //text: `But ${character.name} couldn't protect the ${character.room} because there were no creatures to protect it from.`,
       });
     }
 
@@ -1013,9 +1100,10 @@ let actionHandlers = {
 
     let previousMobsString = listNames(previousMobs);
     await send(db, {
-      room: character.room,
-      character: 'Narrator',
-      text: `${character.name} sacrificed a shard to protect the ${character.room} from ${previousMobsString}.`,
+      speaker: 'Narrator',
+      key: 'protect.success',
+      actor: character,
+      //text: `${character.name} sacrificed a shard to protect the ${character.room} from ${previousMobsString}.`,
     });
   },
 
@@ -1026,10 +1114,12 @@ let actionHandlers = {
       let seconds = gameRate / 1000;
 
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: turns ? 'The world moved in turns.' :
-          seconds > 0 ? `The world moved at the pace of one event every ${seconds} seconds.` : 'The world was paused.',
+        speaker: 'Narrator',
+        key: turns ? 'pace.turns' : seconds > 0 ? 'pace.seconds' : 'pace.paused',
+        actor: character,
+        seconds,
+        //text: turns ? 'The world moved in turns.' :
+          //seconds > 0 ? `The world moved at the pace of one event every ${seconds} seconds.` : 'The world was paused.',
       });
       return;
     }
@@ -1038,9 +1128,11 @@ let actionHandlers = {
 
     if (isNaN(newRate)) {
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `But ${character.name} couldn't change the pace because "${action.text}" was not a number.`
+        speaker: 'Narrator',
+        key: 'pace.nan',
+        actor: character,
+        action,
+        //text: `But ${character.name} couldn't change the pace because "${action.text}" was not a number.`
       });
       return;
     }
@@ -1051,54 +1143,59 @@ let actionHandlers = {
     if (pause) {
       if (!spendShard(db, character)) {
         await send(db, {
-          room: character.room,
-          character: 'Narrator',
-          text: `But ${character.name} couldn't pause the world because ${character.name} had no shards.`,
+          speaker: 'Narrator',
+          key: 'pace.pause.noShards',
+          actor: character,
+          //text: `But ${character.name} couldn't pause the world because ${character.name} had no shards.`,
         });
         return;
       }
 
       gameRate = 0;
       await send(db, {
-        room: character.room,
-        character: 'Narrator',
-        text: `${character.name} sacrificed a shard to pause the world.`,
+        speaker: 'Narrator',
+        key: 'pace.pause',
+        actor: character,
+        //text: `${character.name} sacrificed a shard to pause the world.`,
       });
       return;
     }
 
-    let text = '';
-    if (newRate < 1000) {
-      text += ` But ${character.name} couldn't speed up the world beyond one event every second.`;
+    //let text = '';
+    let limited = newRate < 1000;
+    if (limited) {
+      //text += ` But ${character.name} couldn't speed up the world beyond one event every second.`;
       newRate = 1000;
     }
 
     if (faster) {
       if (!spendShard(db, character)) {
         await send(db, {
-          room: character.room,
-          character: 'Narrator',
-          text: `But ${character.name} couldn't speed up the world because ${character.name} had no shards.`,
+          speaker: 'Narrator',
+          key: 'pace.faster.noShards',
+          actor: character,
+          //text: `But ${character.name} couldn't speed up the world because ${character.name} had no shards.`,
         });
         return;
       }
 
-      text += ` ${character.name} sacrificed a shard to speed up the world.`;
+      //text += ` ${character.name} sacrificed a shard to speed up the world.`;
 
     } else {
-      text += ` ${character.name} slowed down the world.`;
+      //text += ` ${character.name} slowed down the world.`;
     }
 
     gameRate = newRate;
     turns = false;
     let seconds = gameRate / 1000;
-    text += ` The world began to move at the pace of one event every ${seconds} seconds.`;
+    //text += ` The world began to move at the pace of one event every ${seconds} seconds.`;
     text = text.trim();
 
     await send(db, {
-      room: character.room,
-      character: 'Narrator',
-      text,
+      speaker: 'Narrator',
+      key: faster ? (limited ? 'pace.faster.limited' : 'pace.faster') : 'pace.slower',
+      actor: character,
+      seconds,
     });
   },
 
@@ -1114,13 +1211,14 @@ let actionHandlers = {
     let seconds = gameRate / 1000;
 
     if (changed) {
-      text += ` ${character.name} used magic.`
+      //text += ` ${character.name} used magic.`
       turns = on; // how did I get myself into this
       verb = 'began';
     } else {
       verb = 'continued';
     }
 
+    /*
     if (turns) {
       text += ` The world ${verb} to move in response to the players.`;
     } else {
@@ -1132,10 +1230,26 @@ let actionHandlers = {
     }
 
     text = text.trim();
+    */
+
+    let key = 'mode';
+    if (turns) {
+      key += '.turns';
+    } else {
+      key += '.turns';
+    }
+
+    if (changed) {
+      key += '.changed';
+    } else if (!blank) {
+      key = 'mode.invalid';
+    }
+
     await send(db, {
-      room: character.room,
-      character: 'Narrator',
-      text,
+      speaker: 'Narrator',
+      key,
+      actor: character,
+      seconds,
     });
   },
 
@@ -1143,9 +1257,10 @@ let actionHandlers = {
     if (character.role !== 'mob') return;
 
     await send(db, {
-      room: character.room,
-      character: 'Narrator',
-      text: `${character.name} decided to leave our heros alone.`
+      speaker: 'Narrator',
+      key: 'disappear.success',
+      actor: character,
+      //text: `${character.name} decided to leave our heros alone.`
     });
 
     console.log('disappear', character);
@@ -1183,17 +1298,20 @@ actionHandlers['return'] = async function(db, character, action) {
     socket.emit('shards', summoner.shards);
   });
 
-  let message = {
-    room: summonerRoom,
-    character: 'Narrator',
-    text: `${character.name} returned to ${character.summoner} and restored ${shards} shards. ${character.name} disappeared.`,
-  };
-  await send(db, message);
-
-  if (character.room !== summonerRoom) {
-    message.room = character.room;
-    await send(db, message);
+  if (character.room != summonerRoom) {
+    await send(db, {
+      text: `%go ${summonerRoom}%`,
+      actor: character,
+    });
   }
+
+  await send(db, {
+    speaker: 'Narrator',
+    key: 'return.success',
+    actor: character,
+    room: summonerRoom,
+    shards,
+  });
 
   await db.run(
     'UPDATE characters SET hp = 0, shards = -1, room = ? WHERE name = ?;',
@@ -1563,9 +1681,11 @@ async function summonPlayer(db, socket, characterInfoText, cbHistory) {
   }
 
   await send(db, {
-    room: 'origin',
-    character: 'Narrator',
-    text: `${characterInfo.name} has been summoned. ${characterInfo.name} enters the origin, the source of all places in this world.`,
+    speaker: 'Narrator',
+    key: 'summon.player.origin',
+    actor: characterInfo,
+    summonName: characterInfo.name,
+    //text: `${characterInfo.name} has been summoned. ${characterInfo.name} enters the origin, the source of all places in this world.`,
   });
 
   console.log('summonPlayer calls connectCharacter');
@@ -1599,10 +1719,14 @@ async function summonPlayer(db, socket, characterInfoText, cbHistory) {
 
   // Tutorial
   setTimeout(async () => {
+    let tutorial = i18next.t('tutorial', {character: characterInfo.name});
     socket.emit('message', {
+      timestamp: Date.now(),
       room: 'origin',
       character: 'Narrator',
       punchUp: false,
+      text: tutorial,
+      /*
       text: `New to this world and unsure what to do, ${characterInfo.name} considered the many options:
 
 %search% - to acquire shards
@@ -1615,6 +1739,7 @@ async function summonPlayer(db, socket, characterInfoText, cbHistory) {
 %protect% (Cost: 1 shard) - to protect the land from minor enemies.
 %scry% (Cost: 1 shard) - to see what has happened here in the past.
 %pace 60% (Free) - to slow down the world.`
+*/
 
     });
   }, 5000);
@@ -1884,15 +2009,21 @@ async function spawnMobInRoom(db, room) {
 
   const script = `I am a ${mob}, a low level mob. I started with ${hp} hp. I am aggressive and will quickly %strike%. I will not %disappear% easily. However, I may be talked out of violence.`;
 
-  await db.run(
+  let mobId = await db.run(
     `INSERT INTO characters (role, name, room, status, script, description, title, summoner, hp, shards) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
     ['mob', mob, room.name, 1, script, '', '', 'Narrator', hp, shards]
+  ).then((result) => result.lastID);
+
+  let mobInfo = await db.get(
+    `SELECT * FROM characters WHERE id = ?`,
+    [mobId]
   );
 
   await send(db, {
-    room: room.name,
-    character: 'Narrator',
-    text: `A ${mob} appeared in the ${room.name}.`,
+    speaker: 'Narrator',
+    key: 'spawn',
+    actor: mobInfo,
+    //text: `A ${mob} appeared in the ${room.name}.`,
   });
 }
 
