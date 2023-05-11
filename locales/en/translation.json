@@ -1,0 +1,5 @@
+{
+  "search.fail": "{{actor.name}} searched the {{room}} for shards, but found nothing.",
+  "search.foundItems": "{{actor.name}} searched the {{room}}. {{actor.name}} found some useful items, but no shards."
+}
+

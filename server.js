@@ -10,6 +10,19 @@ const RomanNumerals = require('roman-numerals');
 const { promptBot, punchUpNarration, describePlace, createPicture, listMobs, promptCharacterBuilder } = require('./prompt');
 const { listNames } = require('./names');
 
+const i18next = require('i18next');
+const Backend = require('i18next-fs-backend');
+
+i18next
+  .use(Backend)
+  .init({
+    lng: 'th', // default language
+    fallbackLng: 'en',
+    backend: {
+      loadPath: './locales/{{lng}}/translation.json',
+    }
+  });
+
 let gameRate = 15000;
 let socketTable = [];
 let turns = true;
@@ -128,6 +141,10 @@ async function punchUp(db, message) {
 }
 
 async function send(db, messageData) {
+  if (messageData.key) {
+    messageData.text = i18next.t(messageData.key, messageData);
+  }
+
   const message = {
     timestamp: new Date().toISOString(),
     ...messageData,
@@ -441,11 +458,13 @@ let actionHandlers = {
   async search(db, character, action) {
     if (Math.random() < 0.5) {
       // Randomly fail
-      let text = Math.random() < 0.5 ? `${character.name} searched the ${character.room} for shards, but found nothing.` : `${character.name} searched the ${character.room}. ${character.name} found some useful items, but no shards.`;
+      let key = Math.random() < 0.5 ? 'search.fail' : 'search.foundItems';
+      //let text = Math.random() < 0.5 ? `${character.name} searched the ${character.room} for shards, but found nothing.` : `${character.name} searched the ${character.room}. ${character.name} found some useful items, but no shards.`;
       await send(db, {
         room: character.room,
         character: 'Narrator',
-        text,
+        actor: character,
+        key,
       });
       return;
     }
