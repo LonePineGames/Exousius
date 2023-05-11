@@ -206,7 +206,11 @@ function messageReceived(message) {
         }
 
       } else {
-        characterInfo = block;
+        if (block.startsWith("!")) {
+          block = `%%%${block.substring(1)}%%%`;
+        } else {
+          characterInfo = block;
+        }
         const blockElem = document.createElement('div');
         blockElem.innerText = block.trim();
         blockElem.classList.add('suggestion');

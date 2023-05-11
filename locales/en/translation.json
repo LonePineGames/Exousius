@@ -1,5 +1,5 @@
 {
-  "character.selfSummonInstructions": "Please enter your character information in the following format:\n\n%%% CHARACTER\nName: Your Name\nTitle: He/She/They/etc\nDescription: Your character description. Make sure to include your name and weapon.",
+  "character.selfSummonInstructions": "Please enter your character information in the following format:\n\n%%%! CHARACTER\nName: Your Name\nTitle: He/She/They/etc\nDescription: Your character description. Make sure to include your name and weapon.\n%%%\n\nThen summon yourself by typing %summon Your Name%.",
   "hello": "Hello.",
   "place.describe": "It was a beautiful {{room}}.",
   "search.fail": "{{actor.name}} searched the {{room}} for shards, but found nothing.",
