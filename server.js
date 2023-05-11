@@ -26,6 +26,7 @@ i18next
 let gameRate = 15000;
 let socketTable = [];
 let turns = true;
+let ai = false;
 const maxShards = 100;
 
 app.use(express.static('public'));
@@ -108,6 +109,10 @@ async function initializeDatabase() {
 }
 
 async function punchUp(db, message) {
+  if (!ai) {
+    return message.text;
+  }
+
   let inRoom = await db.all(
     'SELECT * FROM characters WHERE room = ? and hp > 0;',
     [message.room]
@@ -141,6 +146,15 @@ async function punchUp(db, message) {
 }
 
 async function send(db, messageData) {
+  if (messageData.actor) {
+    if (!messageData.character) {
+      messageData.character = messageData.actor.name;
+    }
+    if (!messageData.room) {
+      messageData.room = messageData.actor.room;
+    }
+  }
+
   if (messageData.key) {
     messageData.text = i18next.t(messageData.key, messageData);
   }
@@ -410,7 +424,14 @@ let actionHandlers = {
       `SELECT * FROM messages WHERE room = ? ORDER BY id DESC LIMIT 10;`,
       [character.room]
     );
-    room.description = await describePlace(character, history, roomName);
+
+    if (ai) {
+      room.description = await describePlace(character, history, roomName);
+    } else {
+      room.description = i18next.t('place.describe', {
+        room: roomName,
+      });
+    }
 
     await db.run(
       `UPDATE rooms SET description = ? WHERE id = ?;`,
@@ -423,12 +444,21 @@ let actionHandlers = {
       text: `%go ${roomName}%`,
     });
 
-    room.mobs = await listMobs(room);
+    if (ai) {
+      room.mobs = await listMobs(room);
+    } else {
+      room.mobs = [i18next.t('place.mob')];
+    }
     await db.run(
       `UPDATE rooms SET mobs = ? WHERE id = ?;`,
       [room.mobs, id]
     );
-    room.image_url = await createPicture(room.description);
+
+    if (ai) {
+      room.image_url = await createPicture(room.description);
+    } else {
+      room.image_url = '';
+    }
 
     await db.run(
       `UPDATE rooms SET image_url = ? WHERE id = ?;`,
@@ -461,7 +491,6 @@ let actionHandlers = {
       let key = Math.random() < 0.5 ? 'search.fail' : 'search.foundItems';
       //let text = Math.random() < 0.5 ? `${character.name} searched the ${character.room} for shards, but found nothing.` : `${character.name} searched the ${character.room}. ${character.name} found some useful items, but no shards.`;
       await send(db, {
-        room: character.room,
         character: 'Narrator',
         actor: character,
         key,
@@ -1418,7 +1447,7 @@ async function characterBuilder(socket, cbHistory, msg) {
   }
 
   if (cbHistory.length > 1) {
-    let response = await promptCharacterBuilder(cbHistory);
+    let response = ai ? await promptCharacterBuilder(cbHistory) : i18next.t('character.selfSummonInstructions');
     let narratorMsg = {
       timestamp: new Date().toISOString(),
       room: 'origin',
@@ -1889,6 +1918,14 @@ async function spawnMob(db) {
 
 async function promptCharacter(db, character) {
   if (character === undefined) {
+    return;
+  }
+
+  if (!ai) {
+    await send(db, {
+      actor: character,
+      key: 'hello',
+    });
     return;
   }
 

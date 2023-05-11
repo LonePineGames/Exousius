@@ -301,7 +301,7 @@ body {
 
 #suggestions.cooldown {
   transition: opacity 0.5s ease-in-out;
-  animation: cooldownAnimation 10s;
+  animation: cooldownAnimation 1s;
 }
 
 #suggestions {

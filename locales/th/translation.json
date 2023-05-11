@@ -1,4 +1,8 @@
 {
+  "hello": "สวัสดี",
   "search.fail": "{{actor.name}} ค้นหาใน {{room}} หาแต่ไม่พบเศษส่วนใดๆ",
-  "search.foundItems": "{{actor.name}} ค้นหาใน {{room}}. {{actor.name}} พบไอเท็มที่มีประโยชน์บางอย่างแต่ไม่พบเศษส่วน"
+  "search.foundItems": "{{actor.name}} ค้นหาใน {{room}}. {{actor.name}} พบไอเท็มที่มีประโยชน์บางอย่างแต่ไม่พบเศษส่วน",
+  "place.describe": "มันเป็น {{room}} ที่สวยงาม",
+  "place.mob": "ตัวประจำ",
+  "end": ""
 }

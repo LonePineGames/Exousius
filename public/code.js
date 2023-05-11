@@ -359,7 +359,7 @@ function startCooldown() {
   setTimeout(() => {
     suggestionsElement.classList.remove('cooldown');
     onCooldown = false;
-  }, 10000);
+  }, 1000);
 }
 
 let lastSuggestions = [];
