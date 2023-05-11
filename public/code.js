@@ -257,33 +257,27 @@ socket.on('room', function(room) {
 });
 
 socket.on('background-image', function(img) {
-  // Create a new Image object
   let image = new Image();
-  // Set the src of the Image object to the new background image
   image.src = img;
-  // Wait for the image to load
   image.onload = function() {
-    // Get the elements
-    let chatElement = document.getElementById('chat-container');
+    let backgroundElement = document.getElementById('background');
     let roomElem = document.getElementById('room');
 
-    // Fade out the elements
-    chatElement.style.opacity = 0;
-    document.body.style.opacity = 0;
+    backgroundElement.style.opacity = 0;
     roomElem.style.opacity = 0;
 
-    // Wait for the fade out transition to complete
     setTimeout(function() {
-      // Set the new background images
-      chatElement.style.background = `linear-gradient(180deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(${img}), #222`;
-      document.body.style.background = `url(${img}), #333`;
+      backgroundElement.style.background = `url(${img}), #333`;
       roomElem.style.background = `linear-gradient(180deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(${img}), #333`;
 
-      // Fade in the elements
-      chatElement.style.opacity = 1;
-      document.body.style.opacity = 1;
+      backgroundElement.style.backgroundSize = 'cover';
+      backgroundElement.style.backgroundPosition = 'center';
+      roomElem.style.backgroundSize = 'cover';
+      roomElem.style.backgroundPosition = 'center';
+
+      backgroundElement.style.opacity = 1;
       roomElem.style.opacity = 1;
-    }, 1000); // Adjust this value as needed
+    }, 1000);
   };
 });
 
