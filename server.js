@@ -316,7 +316,6 @@ let actionHandlers = {
     socketTable.filter((socket) => socket.character === character.name).forEach(async (socket) => {
       socket.leave(previousRoom);
       socket.join(room);
-      socket.emit('room', room);
       playerInRoom = true;
     });
 
@@ -1312,6 +1311,11 @@ async function reportRoom(db, character) {
   ).then((rows) => rows.map((row) => row.name));
 
   socketTable.filter((socket) => socket.character === character.name).forEach(async (socket) => {
+    console.log("reportRoom url", room.image_url);
+    socket.emit('room', {
+      name: room.name,
+      image: room.image_url,
+    });
     socket.emit('message', {
       timestamp: new Date().toISOString(),
       room: character.room,
@@ -1337,9 +1341,6 @@ async function reportRoom(db, character) {
         }
       }
     }
-
-    console.log("reportRoom url", room.image_url);
-    socket.emit('background-image', room.image_url);
   });
 
   await announceCharacter(db, character);
@@ -1595,7 +1596,6 @@ async function connectCharacter(db, socket, name) {
   socket.emit('reset');
   console.log('emit character');
   socket.emit('character', character.name);
-  socket.emit('room', character.room);
   socket.emit('character', character.name);
   socket.emit('hp', character.hp);
   socket.emit('shards', character.shards);

@@ -253,22 +253,32 @@ socket.on('reset', function() {
 });
 
 socket.on('room', function(room) {
-  document.getElementById('room').innerText = room;
-});
+  let backgroundElement = document.getElementById('background');
+  let roomElem = document.getElementById('room');
+  const animationDelay = 1000;
 
-socket.on('background-image', function(img) {
-  let image = new Image();
-  image.src = img;
-  image.onload = function() {
-    let backgroundElement = document.getElementById('background');
-    let roomElem = document.getElementById('room');
+  console.log(room);
+  backgroundElement.style.opacity = 0;
+  roomElem.style.opacity = 0;
 
-    backgroundElement.style.opacity = 0;
-    roomElem.style.opacity = 0;
-
+  if (!room.image || room.image === '') {
     setTimeout(function() {
-      backgroundElement.style.background = `url(${img}), #333`;
-      roomElem.style.background = `linear-gradient(180deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(${img}), #333`;
+      document.getElementById('room').innerText = room.name;
+      backgroundElement.style.background = '#333';
+      roomElem.style.background = '#333';
+      backgroundElement.style.opacity = 1;
+      roomElem.style.opacity = 1;
+    }, animationDelay);
+    return;
+  }
+
+  let image = new Image();
+  image.src = room.image;
+  image.onload = function() {
+    setTimeout(function() {
+      document.getElementById('room').innerText = room.name;
+      backgroundElement.style.background = `url(${room.image}), #333`;
+      roomElem.style.background = `linear-gradient(180deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(${room.image}), #333`;
 
       backgroundElement.style.backgroundSize = 'cover';
       backgroundElement.style.backgroundPosition = 'center';
@@ -277,7 +287,7 @@ socket.on('background-image', function(img) {
 
       backgroundElement.style.opacity = 1;
       roomElem.style.opacity = 1;
-    }, 1000);
+    }, animationDelay);
   };
 });
 
