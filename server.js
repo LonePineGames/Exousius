@@ -11,7 +11,7 @@ const { promptBot, punchUpNarration, describePlace, createPicture, listMobs, pro
 const { listNames } = require('./names');
 const i18next = require('i18next');
 
-require('./international');
+const { getLocale } = require('./international');
 
 let gameRate = 15000;
 let socketTable = [];
@@ -1802,6 +1802,7 @@ async function connectPlayer(db, socket) {
   let cbHistory = [];
 
   socket.emit('reset');
+  socket.emit('locale', getLocale());
   socket.character = 'Player';
 
   socket.on('message', async (msg) => {

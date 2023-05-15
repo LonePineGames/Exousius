@@ -1,5 +1,7 @@
-const messageContainer = document.getElementById('message-container');
 const socket = io();
+let locale = 'en';
+let lastHp = 10;
+let lastShards = 0;
 
 // Get the current username from Local Storage
 //let myName = 'Player';
@@ -23,6 +25,22 @@ socket.on('reconnect', () => {
   socket.emit('character', myName);
 });
 
+socket.on('locale', (newLocale) => {
+  console.log('locale', newLocale);
+  locale = newLocale;
+  window.locale = locale;
+
+  const input = document.getElementById('message-input');
+  input.placeholder = translations[locale].placeholder;
+
+  const hp = document.getElementById('hp');
+  hp.innerText = rewriteNumber(lastHp);
+  console.log('rewriteNumber', lastHp, rewriteNumber(lastHp), rewriteNumber);
+
+  const shards = document.getElementById('shards');
+  shards.innerText = rewriteNumber(lastShards);
+});
+
 socket.on('character', (name) => {
   console.log('character', name);
   document.getElementById('player-name').innerText = name;
@@ -39,8 +57,6 @@ socket.on('character', (name) => {
     document.body.classList.add('hascharacter');
   }
 });
-
-
 
 /*
 const messageSound = new Audio('message.wav');
@@ -88,6 +104,7 @@ setInterval(processQueue, 250);
 
 function scrollToBottom() {
   setTimeout(() => {
+    const messageContainer = document.getElementById('message-container');
     messageContainer.scrollTop = messageContainer.scrollHeight;
   }, 100);
 }
@@ -295,7 +312,6 @@ socket.on('room', function(room) {
   };
 });
 
-let lastShards = 0;
 socket.on('shards', function(shards) {
   if (shards === lastShards) {
     return;
@@ -303,7 +319,7 @@ socket.on('shards', function(shards) {
   lastShards = shards;
   let shardsElem = document.getElementById('shards');
   setTimeout(() => {
-    shardsElem.innerText = shards;
+    shardsElem.innerText = rewriteNumber(lastShards);
   }, 1000);
   shardsElem.classList.add('flash');
   shardsElem.addEventListener('animationend', () => {
@@ -312,8 +328,9 @@ socket.on('shards', function(shards) {
 });
 
 socket.on('hp', function(hp) {
+  lastHp = hp;
   let hpElem = document.getElementById('hp');
-  hpElem.innerText = hp;
+  hpElem.innerText = rewriteNumber(lastHp);
   if (hp < 5) {
     hpElem.classList.add('low');
   } else {
