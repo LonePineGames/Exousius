@@ -16,7 +16,7 @@ const { getLocale, actionNameTable, actionNameTableReversed } = require('./inter
 let gameRate = 15000;
 let socketTable = [];
 let turns = true;
-let ai = true;
+let ai = false;
 let originRoom = 'origin';
 const maxShards = 100;
 
@@ -74,6 +74,13 @@ async function initializeDatabase() {
       image_url TEXT,
       shards INTEGER NOT NULL,
       mobs TEXT NOT NULL`);
+
+  await makeTable('room_links', `
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    room_id_1 INTEGER NOT NULL,
+    room_id_2 INTEGER NOT NULL,
+    FOREIGN KEY (room_id_1) REFERENCES rooms (id),
+    FOREIGN KEY (room_id_2) REFERENCES rooms (id)`);
 
   await makeTable('scripts', `
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -435,12 +442,22 @@ let actionHandlers = {
       [roomName, '', '', initShards, '']
     ).then((result) => result.lastID);
     let room = {
+      id,
       name: roomName,
       description: '',
       image_url: '',
       shards: initShards,
       mobs: '',
     };
+
+    let prevId = await db.get('SELECT id FROM rooms WHERE name = ?;', [character.room]).then((row) => row.id);
+
+    await db.run(
+      `INSERT INTO room_links (room_id_1, room_id_2) VALUES (?, ?);`,
+      [room.id, prevId]);
+    await db.run(
+      `INSERT INTO room_links (room_id_1, room_id_2) VALUES (?, ?);`,
+      [prevId, room.id]);
 
     await send(db, {
       speaker: 'Narrator',
@@ -1362,10 +1379,21 @@ actionHandlers['return'] = async function(db, character, action) {
 const actionSuggestions = [
   async function goSuggestions(db, character) {
     if (character.role === 'mob') return [];
-    const rooms = await db.all(
-      `SELECT name FROM rooms where name != ?;`,
+    let roomId = await db.get(
+      'SELECT id FROM rooms WHERE name = ?;',
       [character.room]
+    ).then((room) => room.id);
+    console.log('suggestions', roomId);
+    const links = await db.all(
+      'SELECT * FROM room_links WHERE room_id_1 = ?;',
+      [roomId]
     );
+    console.log('links', links);
+    let ids = links.map((link) => link.room_id_2);
+    const rooms = await db.all(
+      `SELECT * FROM rooms WHERE id IN (${ids.join(',')})`
+    );
+    console.log('rooms', rooms);
 
     return rooms.map((room) => `%go ${room.name}%`);
   },
@@ -1498,7 +1526,7 @@ async function generateActionSuggestions(db, characterName) {
     if (translation) {
       action.name = translation;
     }
-    console.log(action);
+    //console.log(action);
     if (action.text === '') {
       return `%${action.name}%`;
     } else {

@@ -327,6 +327,10 @@ body {
   margin: 0;
 }
 
+.message .suggestion.block {
+  text-align: left;
+}
+
 .suggestion:hover {
   box-shadow: 0 0 0.5rem #777;
 }
