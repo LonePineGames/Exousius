@@ -468,7 +468,7 @@ let actionHandlers = {
     if (ai) {
       room.mobs = await listMobs(room);
     } else {
-      room.mobs = i18next.t('place.mob');
+      room.mobs = i18next.t('mob');
     }
     await db.run(
       `UPDATE rooms SET mobs = ? WHERE id = ?;`,
@@ -830,6 +830,7 @@ let actionHandlers = {
     if (targetName == '') {
       targetName = character.name;
     }
+    let isSelf = targetName === character.name;
     let target = await db.get(
       `SELECT * FROM characters WHERE name = ?;`,
       [targetName]
@@ -871,7 +872,7 @@ let actionHandlers = {
     if (target.hp >= 10) {
       await send(db, {
         speaker: 'Narrator',
-        key: 'heal.alreadyFull',
+        key: isSelf ? 'heal.self.alreadyFull' : 'heal.alreadyFull',
         actor: character,
         targetName,
         //text: `But ${character.name} couldn't heal ${target.name} because ${target.name} was already at full health.`,
@@ -1250,6 +1251,28 @@ let actionHandlers = {
       key,
       actor: character,
       seconds,
+    });
+  },
+
+  async magic(db, character, action) {
+    let on = action.text === 'on';
+    let off = action.text === 'off';
+    let changed = (on && !ai) || (off && ai);
+    let unchanged = (on || off) && !changed;
+    let blank = action.text === '';
+
+    if (changed) {
+      ai = on;
+    }
+
+    let subkey = ai ? 'on' : 'off';
+    let key = changed ? 'magic.changed.' + subkey
+      : blank || unchanged ? 'magic.status.' + subkey
+      : 'magic.invalid';
+    await send(db, {
+      speaker: 'Narrator',
+      key,
+      actor: character,
     });
   },
 
@@ -2021,7 +2044,7 @@ async function spawnMobInRoom(db, room) {
 
   await send(db, {
     speaker: 'Narrator',
-    key: 'spawn',
+    key: 'mob.spawn',
     actor: mobInfo,
     //text: `A ${mob} appeared in the ${room.name}.`,
   });
@@ -2059,7 +2082,7 @@ async function promptCharacter(db, character) {
   if (!ai) {
     await send(db, {
       actor: character,
-      key: 'hello',
+      key: 'mob.hello',
     });
     return;
   }
