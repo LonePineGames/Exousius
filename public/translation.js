@@ -76,13 +76,17 @@ function rewriteNumber(number) {
 }
 
 function translateAction(action) {
-  let translation = translations[window.locale];
-  let keys = Object.keys(translation);
-  for (let i = 0; i < keys.length; i++) {
-    let key = keys[i];
-    if (key.startsWith('action.')) {
-      if (translation[key] === action) {
-        return key.split('.')[1];
+  let languages = Object.keys(translations);
+  for (let j = 0; j < languages.length; j++) {
+    let language = languages[j];
+    let translation = translations[language];
+    let keys = Object.keys(translation);
+    for (let i = 0; i < keys.length; i++) {
+      let key = keys[i];
+      if (key.startsWith('action.')) {
+        if (translation[key] === action) {
+          return key.split('.')[1];
+        }
       }
     }
   }

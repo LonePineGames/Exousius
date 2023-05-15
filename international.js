@@ -3,7 +3,7 @@ const i18next = require('i18next');
 const Backend = require('i18next-fs-backend');
 const enTranslation = require('./locales/en/translation.js');
 const thTranslation = require('./locales/th/translation.js');
-const locale = 'th';
+const locale = process.env.LOCALE || 'en';
 
 i18next
   .use(Backend)
