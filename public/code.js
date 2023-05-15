@@ -122,11 +122,11 @@ window.addEventListener('resize', setVhVariable);
 
 function getActionName(action) {
   let spaceNdx = action.indexOf(' ');
-  if (spaceNdx === -1) {
-    return action.substring(1, action.length - 1);
-  } else {
-    return action.substring(1, spaceNdx);
-  }
+  let result = spaceNdx === -1 ?
+    action.substring(1, action.length - 1) :
+    action.substring(1, spaceNdx);
+  result = translateAction(result);
+  return result;
 }
 
 document.getElementById('message-input').addEventListener('keydown', (event) => {

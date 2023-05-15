@@ -11,7 +11,7 @@ const { promptBot, punchUpNarration, describePlace, createPicture, listMobs, pro
 const { listNames } = require('./names');
 const i18next = require('i18next');
 
-const { getLocale } = require('./international');
+const { getLocale, actionNameTable, actionNameTableReversed } = require('./international');
 
 let gameRate = 15000;
 let socketTable = [];
@@ -240,8 +240,16 @@ function parseAction(ntext) {
   if (firstSpace === -1) {
     firstSpace = ntext.length;
   }
+
+  let name = ntext.substring(0, firstSpace);
+  let translation = actionNameTableReversed[name];
+  if (translation) {
+    name = translation;
+  }
+
   return {
-    name: ntext.substring(0, firstSpace),
+    action: ntext,
+    name: name,
     text: ntext.substring(firstSpace + 1),
   };
 }
@@ -1469,6 +1477,20 @@ async function generateActionSuggestions(db, characterName) {
 
   let suggestions = await Promise.all(promises);
   suggestions = suggestions.reduce((acc, val) => acc.concat(val), []);
+
+  suggestions = suggestions.map((actionText) => {
+    let action = parseAction(actionText.substring(1, actionText.length - 1));
+    let translation = actionNameTable[action.name];
+    if (translation) {
+      action.name = translation;
+    }
+    console.log(action);
+    if (action.text === '') {
+      return `%${action.name}%`;
+    } else {
+      return `%${action.name} ${action.text}%`;
+    }
+  });
 
   if (character.role === 'mob') {
     console.log(character.name, character.role, suggestions);

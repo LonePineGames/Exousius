@@ -20,4 +20,9 @@ function getLocale() {
   return locale;
 }
 
-module.exports = { getLocale };
+let actionNameTable = ['go', 'create', 'search', 'destroy', 'protect', 'scry', 'summon', 'strike', 'heal', 'disappear', 'return', 'give']
+  .reduce((acc, cur) => { return { ...acc, [cur]: i18next.t(`action.${cur}`) } }, {});
+let actionNameTableReversed = Object.entries(actionNameTable).reduce((acc, cur) => { return { ...acc, [cur[1]]: cur[0] } }, {});
+// I'm beginning to see why this style is controversial.
+
+module.exports = { getLocale, actionNameTable, actionNameTableReversed };

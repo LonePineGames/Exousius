@@ -16,6 +16,19 @@ const translations = {
     '8': '8',
     '9': '9',
     '0': '0',
+
+    "action.go": "go",
+    "action.create": "create",
+    "action.give": "give",
+    "action.scry": "scry",
+    "action.return": "return",
+    "action.disappear": "disappear",
+    "action.strike": "strike",
+    "action.summon": "summon",
+    "action.heal": "heal",
+    "action.protect": "protect",
+    "action.search": "search",
+    "action.destroy": "destroy",
   },
 
   th: {
@@ -35,6 +48,19 @@ const translations = {
     '8': '๘',
     '9': '๙',
     '0': '๐',
+
+    "action.go": "ไป",
+    "action.create": "สร้าง",
+    "action.give": "ให้",
+    "action.scry": "สกรี",
+    "action.return": "การกลับมา",
+    "action.disappear": "หายไป",
+    "action.strike": 'ตี',
+    "action.summon": "เรียก",
+    "action.heal": "รักษา",
+    "action.protect": "ป้องกัน",
+    "action.search": "ค้นหา",
+    "action.destroy": "ทำลาย",
   },
 };
 
@@ -47,5 +73,20 @@ function rewriteNumber(number) {
   }
   console.log('rewriteNumber', number, result);
   return result;
+}
+
+function translateAction(action) {
+  let translation = translations[window.locale];
+  let keys = Object.keys(translation);
+  for (let i = 0; i < keys.length; i++) {
+    let key = keys[i];
+    if (key.startsWith('action.')) {
+      if (translation[key] === action) {
+        return key.split('.')[1];
+      }
+    }
+  }
+
+  return action;
 }
 
