@@ -9,22 +9,9 @@ const fs = require('fs');
 const RomanNumerals = require('roman-numerals');
 const { promptBot, punchUpNarration, describePlace, createPicture, listMobs, promptCharacterBuilder } = require('./prompt');
 const { listNames } = require('./names');
-
 const i18next = require('i18next');
-const Backend = require('i18next-fs-backend');
 
-const enTranslation = require('./locales/en/translation.js');
-const thTranslation = require('./locales/th/translation.js');
-i18next
-  .use(Backend)
-  .init({
-    lng: 'th', // default language
-    fallbackLng: 'en',
-    resources: {
-      en: { translation: enTranslation },
-      th: { translation: thTranslation },
-    },
-  });
+require('./international');
 
 let gameRate = 15000;
 let socketTable = [];

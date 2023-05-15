@@ -1,5 +1,19 @@
 module.exports = {
   "intro": "ใครหลงทางในความว่างเปล่า? %summon Player%",
+
+  "action.go": "ไป",
+  "action.create": "สร้าง",
+  "action.give": "ให้",
+  "action.scry": "สกรี",
+  "action.return": "การกลับมา",
+  "action.disappear": "หายไป",
+  "action.strike": 'ตี',
+  "action.summon": "เรียก",
+  "action.heal": "รักษา",
+  "action.protect": "ป้องกัน",
+  "action.search": "ค้นหา",
+  "action.destroy": "ทำลาย",
+
   "character.selfSummonInstructions": `โปรดป้อนข้อมูลตัวละครของคุณตามรูปแบบดังต่อไปนี้:
 
 %%%! CHARACTER

@@ -1,3 +1,4 @@
+const { getLocale } = require('./international');
 
 class NameServer {
   constructor() {
@@ -61,7 +62,7 @@ class NameServer {
 }
 
 function listNames(names) {
-  const locale = 'th';
+  const locale = getLocale();
   if (locale === 'en') {
     if (names.length === 0) {
       return 'no one';

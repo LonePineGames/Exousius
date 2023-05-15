@@ -1,5 +1,18 @@
 module.exports = {
 
+  "action.go": "go",
+  "action.create": "create",
+  "action.give": "give",
+  "action.scry": "scry",
+  "action.return": "return",
+  "action.disappear": "disappear",
+  "action.strike": "strike",
+  "action.summon": "summon",
+  "action.heal": "heal",
+  "action.protect": "protect",
+  "action.search": "search",
+  "action.destroy": "destroy",
+
   "intro": "Who is that wandering about the void? %summon Player%",
 
   "character.selfSummonInstructions": `Please enter your character information in the following format:
