@@ -15,6 +15,9 @@ module.exports = {
 
   "intro": "Who is that wandering about the void? %summon Player%",
 
+  "origin.name": "origin",
+  "origin.description": "In a deep underground room, there is a shrine built around a spring of water. The only light is glowing blue crystals mounted on the mossy walls.",
+
   "character.selfSummonInstructions": `Please enter your character information in the following format:
 
 %%%! CHARACTER
@@ -33,6 +36,15 @@ Description: Tester Testerossa lives on 123 Test Avenue, Anytown, Ohio, USA. Exc
 %%%
 
 %summon Tester%
+
+
+%%% CHARACTER
+Name: Omod
+Title: He
+Description: Omod is a powerful wizard. He wears a robe and carries a wooden staff. 
+%%%
+
+%summon Omod%
 */
 
   "action.did": "{{actor.name}} did: {{actionText}}.",

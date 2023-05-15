@@ -14,6 +14,9 @@ module.exports = {
   "action.search": "ค้นหา",
   "action.destroy": "ทำลาย",
 
+  "origin.name": "ต้นทาง",
+   "origin.description": "ในห้องใต้ดินลึก มีศาลเจ้าที่สร้างขึ้นรอบๆ น้ำพุ แสงสว่างเพียงอย่างเดียวคือคริสตัลสีฟ้าเรืองแสงที่ติดอยู่บนผนังที่มีตะไคร่น้ำ",
+
   "character.selfSummonInstructions": `โปรดป้อนข้อมูลตัวละครของคุณตามรูปแบบดังต่อไปนี้:
 
 %%%! CHARACTER

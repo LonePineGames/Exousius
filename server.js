@@ -17,6 +17,7 @@ let gameRate = 15000;
 let socketTable = [];
 let turns = true;
 let ai = true;
+let originRoom = 'origin';
 const maxShards = 100;
 
 app.use(express.static('public'));
@@ -82,11 +83,24 @@ async function initializeDatabase() {
       description TEXT NOT NULL,
       title TEXT NOT NULL`);
 
-  let originExists = await db.get(
-    `SELECT name FROM rooms WHERE name = 'origin';`
-  ).then((row) => row !== undefined);
-  if (!originExists) {
-    await db.run(`INSERT INTO rooms (name, description, image_url, shards, mobs) VALUES ('origin', 'The origin void. Infinite, empty black space.', '', 0, '');`);
+  let originExists = await db.get(`SELECT COUNT(*) as roomCount FROM rooms`)
+    .then((row) => row.roomCount > 0);
+
+  if (originExists) {
+    originRoom = await db.get('SELECT name FROM rooms ORDER BY ROWID ASC LIMIT 1').then((row) => row.name);
+    console.log(originRoom);
+    if (!originRoom) {
+      throw 'origin not found';
+    }
+  } else {
+    originRoom = i18next.t('origin.name');
+    let description = i18next.t('origin.description');
+    let imageNum = Math.floor(Math.random()*4);
+    let image = `/backgrounds/origin0${imageNum}.png`;
+    await db.run(`INSERT INTO rooms (name, description, image_url, shards, mobs) VALUES (?, ?, ?, 0, '')`,
+      //'origin', 'The origin void. Infinite, empty black space.', '', 0, '');`);
+      [originRoom, description, image]
+    );
 
     /*
     await db.run(`INSERT INTO rooms (name, description, shards) VALUES ('forest', 'A beautiful, enchanted forest.', 0);`);
@@ -558,7 +572,7 @@ let actionHandlers = {
   },
 
   async destroy(db, character, action) {
-    if (character.room === 'origin') {
+    if (character.room === originRoom) {
       await send(db, {
         speaker: 'Narrator',
         key: 'destroy.cantOrigin',
@@ -593,7 +607,7 @@ let actionHandlers = {
     console.log(charactersInRoom);
 
     charactersInRoom.forEach(async (characterInRoom) => {
-      await executeAction(db, character, { name: 'go', text: 'origin' });
+      await executeAction(db, character, { name: 'go', text: originRoom });
     });
 
     await db.run(
@@ -1591,7 +1605,7 @@ async function sendRandomRoomImage(socket) {
 
 async function characterBuilder(socket, cbHistory, msg) {
   if (msg) {
-    msg.room = 'origin';
+    msg.room = originRoom;
     msg.timestamp = new Date().toISOString();
     cbHistory.push(msg);
     socket.emit('message', msg);
@@ -1604,7 +1618,7 @@ async function characterBuilder(socket, cbHistory, msg) {
     let response = ai ? await promptCharacterBuilder(cbHistory) : i18next.t('character.selfSummonInstructions');
     let narratorMsg = {
       timestamp: new Date().toISOString(),
-      room: 'origin',
+      room: originRoom,
       character: 'Narrator',
       text: response,
     };
@@ -1642,7 +1656,7 @@ async function summonPlayer(db, socket, characterInfoText, cbHistory) {
   if (!characterInfo.name || !characterInfo.title || !characterInfo.description) {
     console.log('summonPlayer failed (missing info)');
     let msg = {
-      room: 'origin',
+      room: originRoom,
       character: 'System',
       text: `But the summoning failed. You must provide a name, title, and description.`,
     };
@@ -1660,7 +1674,7 @@ async function summonPlayer(db, socket, characterInfoText, cbHistory) {
   if (character !== undefined) {
     console.log('summonPlayer failed (already exists)');
     let msg = {
-      room: 'origin',
+      room: originRoom,
       character: 'System',
       text: `But the summoning failed. There was already a character named ${characterInfo.name} in this world.`,
     };
@@ -1670,9 +1684,10 @@ async function summonPlayer(db, socket, characterInfoText, cbHistory) {
 
   console.log('summonPlayer continues');
 
+  characterInfo.room = originRoom;
   await db.run(
     `INSERT INTO characters (role, name, room, status, script, description, title, summoner, hp, shards) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-    ['user', characterInfo.name, 'origin', 1, '', characterInfo.description, characterInfo.title, 'Narrator', 10, 0]
+    ['user', characterInfo.name, characterInfo.room, 1, '', characterInfo.description, characterInfo.title, 'Narrator', 10, 0]
   );
 
   let demons = [
@@ -1751,10 +1766,10 @@ async function summonPlayer(db, socket, characterInfoText, cbHistory) {
 
   // Tutorial
   setTimeout(async () => {
-    let tutorial = i18next.t('tutorial', {character: characterInfo.name});
+    let tutorial = i18next.t('tutorial', {character: characterInfo.name, actor: character});
     socket.emit('message', {
       timestamp: Date.now(),
-      room: 'origin',
+      room: originRoom,
       character: 'Narrator',
       punchUp: false,
       text: tutorial,
@@ -1790,7 +1805,7 @@ async function connectCharacter(db, socket, name) {
   if (!character) {
     /*
     socket.emit('message', {
-      room: 'origin',
+      room: originRoom,
       character: 'Narrator',
       text: `I don't know who ${name} is.`,
     });
@@ -1884,7 +1899,7 @@ async function connectPlayer(db, socket) {
   setTimeout(async () => {
     if (socket.character === 'Player') {
       let msg = {
-        room: 'origin',
+        room: originRoom,
         character: 'Narrator',
         text: i18next.t('intro'),
         //`Who is that wandering about the void? %summon Player%`,

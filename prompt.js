@@ -339,7 +339,7 @@ Narrator: `;
 
   try {
     const completion = await openai.createChatCompletion({
-      model: "gpt-4",
+      model: "gpt-3.5-turbo",
       temperature: 0.8,
       max_tokens: 400,
       messages: [{role: "user", content: prompt}],
