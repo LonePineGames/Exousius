@@ -76,7 +76,7 @@ ${actor.name}: `;
     const completion = await openai.createChatCompletion({
       //model: character.role === 'mob' ? "gpt-3.5-turbo" : "gpt-4",
       model: "gpt-3.5-turbo",
-      temperature: 1.2,
+      temperature: 0.8,
       max_tokens: 80,
       messages: [{role: "user", content: prompt}],
     });
@@ -141,7 +141,7 @@ Narrator: `;
   try {
     const completion = await openai.createChatCompletion({
       model: "gpt-3.5-turbo",
-      temperature: 1.2,
+      temperature: 0.8,
       max_tokens: 200,
       messages: [{role: "user", content: prompt}],
     });
@@ -180,7 +180,7 @@ The tavern was a warm and inviting space, with a roaring fire and lively chatter
   try {
     const completion = await openai.createChatCompletion({
       model: "gpt-3.5-turbo",
-      temperature: 1.2,
+      temperature: 0.8,
       max_tokens: 80,
       messages: [{role: "user", content: prompt}],
     });
@@ -224,7 +224,7 @@ The ${room.name} is home to many creatures, including:
   try {
     const completion = await openai.createChatCompletion({
       model: "gpt-3.5-turbo",
-      temperature: 1.2,
+      temperature: 0.8,
       max_tokens: 80,
       messages: [{role: "user", content: prompt}],
     });
@@ -272,6 +272,11 @@ async function createPicture(description) {
 }
 
 async function promptCharacterBuilder(history) {
+  const prompt = i18next.t('prompt.characterBuilder', {
+    history
+  });
+
+  /*
   let prompt =
 `This is a text-based role playing game set in a medieval fantasy world called Exousius. You are the narrator. You must gather information from the player to build their character. The player may be new to these lands, or they may be a seasoned warrior.
 
@@ -326,6 +331,7 @@ ${history.map((h) => `${h.character}: ${h.text}`).join('\n')}
 
 ### Response
 Narrator: `;
+  */
 
 //6. Realize you never asked for the player's name. Ask the player for their name. If the player gives a "bad name", demand that they give their "summoner name" instead. A bad name is a name that is too long (over 20 letters) or doesn't match the setting, especially real world names and inappropriate names. Also, the player may not pick the names Odel, Ekel, Mort or Temusea. (This setting already has characters with these names.) Be quick to help the player out by suggesting a setting appropriate name.
   //console.log(prompt);
@@ -334,7 +340,7 @@ Narrator: `;
   try {
     const completion = await openai.createChatCompletion({
       model: "gpt-4",
-      temperature: 1.2,
+      temperature: 0.8,
       max_tokens: 400,
       messages: [{role: "user", content: prompt}],
     });

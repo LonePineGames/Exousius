@@ -1,5 +1,7 @@
 module.exports = {
 
+  "intro": "Who is that wandering about the void? %summon Player%",
+
   "character.selfSummonInstructions": `Please enter your character information in the following format:
 
 %%%! CHARACTER

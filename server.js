@@ -29,7 +29,7 @@ i18next
 let gameRate = 15000;
 let socketTable = [];
 let turns = true;
-let ai = false;
+let ai = true;
 const maxShards = 100;
 
 app.use(express.static('public'));
@@ -1876,7 +1876,8 @@ async function connectPlayer(db, socket) {
       let msg = {
         room: 'origin',
         character: 'Narrator',
-        text: `Who is that wandering about the void? %summon Player%`,
+        text: i18next.t('intro'),
+        //`Who is that wandering about the void? %summon Player%`,
       };
       await characterBuilder(socket, cbHistory, msg);
     }
