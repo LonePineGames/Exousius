@@ -1,6 +1,7 @@
 const { listNames } = require('./names');
 const https = require('https');
 const fs = require('fs');
+const i18next = require('i18next');
 
 // Set up OpenAI key
 let apiKey = '';
@@ -37,35 +38,44 @@ Be attentive to pronouns. Example: Fae healed feaself for 2HP. Fae gave you 5 sh
 async function promptBot(character, suggestions, inRoom, history) {
   //console.log('promptBot', character, inRoom);
   let inRoomText = listNames(inRoom.map((p) => p.name));
-  let summonText = character.summoner === 'Narrator' ? '' : ` I was summoned by ${character.summoner}.`;
-  let maxHP = character.role === 'mob' ? '' : ` out of 10`;
+  let maxHP = character.role === 'mob' ? character.hp : 10;
+  let actor = character;
+  let suggestionsText = suggestions.join(' ');
+  let historyText = history.map((h) => `${h.character}: ${h.text}`).join('\n');
+  const prompt = i18next.t('prompt.bot', {
+    actor: character, suggestionsText, inRoomText, maxHP, historyText
+  });
+
+    /*
   const prompt =
 
-`This is a text-based role playing game set in a medieval fantasy world. I am ${character.name}.${summonText}
+`This is a text-based role playing game set in a medieval fantasy world. I am ${actor.name}. I was summoned by ${actor.summoner}.
 
-${character.script}
+${actor.script}
 
 ### Suggested Actions
-${suggestions.join('\n')}
-
-### History
-${history.map((h) => `${h.character}: ${h.text}`).join('\n')}
+${suggestionsText}
 
 ### Context
-I am in the ${character.room}. Creatures in the ${character.room}: ${inRoomText}. I have ${character.hp}${maxHP} HP and I am carrying ${character.shards} shards.
+I am in the ${actor.room}. Beings in the ${actor.room}: ${inRoomText}. I have ${actor.hp}/${maxHP} HP and I am carrying ${actor.shards} shards.
 
 ### Instructions
-Output only ${character.name}'s response. Keep the response brief, under 20 words. If ${character.name} does an action, output one of the suggested actions as part of the response. Example:
-${character.name}: I must go! %go forest%
+Output only ${actor.name}'s response. Keep the response brief, under 20 words. If ${actor.name} does an action, output one of the suggested actions as part of the response. Example:
+${actor.name}: I must go! %go forest%
+
+### History
+${historyText}
 
 ### Response
-${character.name}: `;
+${actor.name}: `;
+*/
 
-  //console.log(prompt);
+  console.log(prompt);
 
   try {
     const completion = await openai.createChatCompletion({
-      model: character.role === 'mob' ? "gpt-3.5-turbo" : "gpt-4",
+      //model: character.role === 'mob' ? "gpt-3.5-turbo" : "gpt-4",
+      model: "gpt-3.5-turbo",
       temperature: 1.2,
       max_tokens: 80,
       messages: [{role: "user", content: prompt}],
@@ -85,6 +95,7 @@ ${character.name}: `;
 async function punchUpNarration(narration, history, room, inRoom) {
   //console.log('punchUpNarration', narration, room, inRoom);
   let inRoomText = listNames(inRoom.map((p) => p.name));
+  let historyText = history.map((h) => `${h.character}: ${h.text}`).join('\n');
   let descriptions = inRoom.filter((p) => p.role !== 'mob')
     .map((p) => {
       if (p.title === '') {
@@ -94,6 +105,11 @@ async function punchUpNarration(narration, history, room, inRoom) {
       }
     }).join('\n');
 
+  const prompt = i18next.t('prompt.narration', {
+    room, inRoomText, descriptions, history, narration, pronounHint
+  });
+
+  /*
   const prompt =
 `This is a text-based role playing game set in a medieval fantasy world. I am the narrator.
 
@@ -119,7 +135,8 @@ Narrator: ${narration}
 
 ### Response
 Narrator: `;
-  //console.log(prompt);
+  */
+  console.log(prompt);
 
   try {
     const completion = await openai.createChatCompletion({

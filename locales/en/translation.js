@@ -111,6 +111,8 @@ Description: Tester Testerossa lives on 123 Test Avenue, Anytown, Ohio, USA. Exc
   "summon.success": "{{actor.name}} used a shard and summoned {{summonName}}.",
   "summon.player.origin": "{{summonName}} was summoned. {{summonName}} appeared in the origin.",
 
+  /* tutorial */
+
   "tutorial": `New to this world and unsure what to do, {{actor.name}} considered the many options:
 
 %search% - to acquire shards
@@ -122,5 +124,55 @@ Description: Tester Testerossa lives on 123 Test Avenue, Anytown, Ohio, USA. Exc
 %destroy% (Cost: 1 shard) - to destroy the land.
 %protect% (Cost: 1 shard) - to protect the land from minor enemies.
 %scry% (Cost: 1 shard) - to see what has happened here in the past.`,
+
+  /* prompt.bot */
+
+  "prompt.bot": `This is a text-based role playing game set in a medieval fantasy world. I am {{actor.name}}. I was summoned by {{actor.summoner}}.
+
+{{actor.script}}
+
+### Suggested Actions
+{{suggestionsText}}
+
+### Context
+I am in the {{actor.room}}. Beings in the {{actor.room}}: {{inRoomText}}. I have {{actor.hp}}/{{maxHP}} HP and I am carrying {{actor.shards}} shards.
+
+### Instructions
+Output only {{actor.name}}'s response. Keep the response brief, under 20 words. If {{actor.name}} does an action, output one of the suggested actions as part of the response. Example:
+{{actor.name}}: I must go! %go forest%
+
+### History
+{{historyText}}
+
+### Response
+{{actor.name}}: `,
+
+  /* prompt.narration */
+
+  "prompt.narration": `This is a text-based role playing game set in a medieval fantasy world. I am the narrator.
+
+### Context
+{{room.description}} Beings currently in the {{room.name}}: {{inRoomText}}. Only these beings are here.
+
+{{descriptions}}
+
+{{pronounHint}}
+
+### Instructions
+Improve the following narration. Keep the response brief, under 20 words. Preserve all details, especially numbers. Fix any grammatical mistakes, capitalization and pluralization issues, and so on. Add drama and enticing language. Make the general more specific (eg "ate food" => "had a wonderful meal of cooked rabbit"). Only describe the events mentioned in the original narration. Use past tense. Connect the narration to the history and context. Make it sound like an old fairy tale.
+
+### Example
+Original: Arkim healed Arkim for 2HP. Arkim searched the origin and found a shard. Arkim searched the origin for shards. Arkim found some useful items, but no shards. rowdy bard struck Arkim.
+Response: After the battle, Arkim healed himself for 2HP. Then he turned to his most important task: the search for shards. For hours, he searched the dark void, fruitlessly... Until, finally, he found a shard! His spirits raised, he continued his search. But a second shard would be elusive, as Arkim's fervent search only yielded an old pickaxe. Rowdy bard suddenly attacked.
+
+### History
+{{historyText}}
+
+### Original Narration
+Narrator: {{narration}}
+
+### Response
+Narrator: `,
+
 };
 

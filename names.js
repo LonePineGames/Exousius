@@ -61,12 +61,24 @@ class NameServer {
 }
 
 function listNames(names) {
-  if (names.length === 0) {
-    return 'no one';
-  } else if (names.length >= 2) {
-    return names.slice(0, -1).join(', ') + ' and ' + names.slice(-1);
-  } else {
-    return names.join('');
+  const locale = 'th';
+  if (locale === 'en') {
+    if (names.length === 0) {
+      return 'no one';
+    } else if (names.length >= 2) {
+      return names.slice(0, -1).join(', ') + ' and ' + names.slice(-1);
+    } else {
+      return names.join('');
+    }
+
+  } else if (locale === 'th') {
+    if (names.length === 0) {
+      return 'ไม่มีใคร';
+    } else if (names.length >= 2) {
+      return names.slice(0, -1).join(', ') + ' และ ' + names.slice(-1);
+    } else {
+      return names.join('');
+    }
   }
 }
 
