@@ -56,7 +56,8 @@ body {
   border-radius: 300px 300px 0 0;
   margin-top: calc(0px - var(--push-up));
   overflow: hidden;
-  box-shadow: 5rem 5rem 5rem black inset,
+  box-shadow: 2rem 2rem 2rem black inset,
+    0 0 0.5rem black inset,
     -1rem -1rem 2rem black,
     -0.25rem -0.25rem 0.5rem black,
     0.25rem 0.25rem 0.5rem #777;

@@ -158,37 +158,74 @@ Narrator: `;
   return '';
 }
 
-async function describePlace(character, history, roomName) {
+async function describePlace(actor, history, roomName, actorRoom) {
   //console.log('describePlace', roomName);
+  let historyText = history.map((h) => `${h.character}: ${h.text}`).join('\n');
+  let actorRoomDescription = `Name: ${actorRoom.name}
+Description: ${actorRoom.description}
+Mobs:
+`;
+  if (actorRoom.mobs && actorRoom.mobs.length > 0) {
+    actorRoomDescription += actorRoom.mobs.map((m) => `  - ${m}`).join('\n');
+  } else {
+    actorRoomDescription += '  - None';
+  }
   let prompt =
+    i18next.t('prompt.describePlace', {
+      actor, historyText, roomName, actorRoomDescription
+    });
+    /*
 `This is a text-based role playing game set in a medieval fantasy world.
 
 ### History
-${history.map((h) => `${h.character}: ${h.text}`).join('\n')}
+${historyText}
 
 ### Instructions
-Describe the ${roomName}, which ${character.name} just created. Keep the response brief, under 40 words. Add drama and enticing language. Use past tense. Only describe the ${roomName}. Do not describe ${character.name} or any other characters.
+Describe the ${roomName}, which ${character.name} just created. Keep the response brief, under 40 words. Add drama and enticing language. Use past tense. Only describe the ${roomName}. Do not mention ${character.name} or any other characters.
 
 ### Example
-The tavern was a warm and inviting space, with a roaring fire and lively chatter. The cramped room was filled with low murmurs and the occasional clink of glasses.
+The tavern was a warm and inviting space, with a roaring fire and lively chatter. The cramped room was filled with low murmurs, laughing and the occasional clink of glasses.
 
 ### Response
 `;
+*/
 
-  //console.log(prompt);
+  console.log(prompt);
 
   try {
-    const completion = await openai.createChatCompletion({
+    /*const completion = await openai.createChatCompletion({
       model: "gpt-3.5-turbo",
       temperature: 0.8,
       max_tokens: 80,
       messages: [{role: "user", content: prompt}],
     });
-    const message = completion.data.choices[0].message.content;
-    //console.log('message', message);
+    const message = completion.data.choices[0].message.content;*/
+    const message = `Name: Fae School
+Description: The grand fae school was a towering wonder, with crystal spires and sparkling arches. The halls were filled with the soft glow of magic, and the classrooms bustled with eager students.
+Mobs:
+  - mischievous fae student
+  - strict headmaster
+  - wise elder fae
+  - curious human scholar`
+    console.log('describePlace response: ', message);
     const lines = message.split("\n")
-    const firstLine = lines[0].trim();
-    return firstLine;
+    let result = {
+      description: '',
+      mobs: [],
+    };
+    for (let line of lines) {
+      if (line.startsWith('Description: ')) {
+        result.description = line.substring(13);
+      } else if (line.startsWith('  - ')) {
+        let mob = line.substring(3).trim();
+        if (mob === 'None' || mob === 'none' || mob === 'no mobs' || mob === 'No mobs') {
+          continue;
+        }
+        result.mobs.push(mob);
+      }
+    }
+    console.log("result: ", result);
+    return result;
   } catch (error) {
     console.error(error);
   }
@@ -196,6 +233,7 @@ The tavern was a warm and inviting space, with a roaring fire and lively chatter
   return '';
 }
 
+/*
 async function listMobs(room) {
   //console.log('describePlace', roomName);
   let prompt =
@@ -239,6 +277,7 @@ The ${room.name} is home to many creatures, including:
 
   return '';
 }
+*/
 
 async function createPicture(description) {
   const response = await openai.createImage({
@@ -368,5 +407,5 @@ Narrator: `;
   return '';
 }
 
-module.exports = { promptBot, punchUpNarration, describePlace, listMobs, createPicture, promptCharacterBuilder };
+module.exports = { promptBot, punchUpNarration, describePlace, createPicture, promptCharacterBuilder };
 

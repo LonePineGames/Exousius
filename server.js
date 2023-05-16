@@ -7,7 +7,7 @@ const sqlite = require('sqlite');
 const dbFile = './world.db';
 const fs = require('fs');
 const RomanNumerals = require('roman-numerals');
-const { promptBot, punchUpNarration, describePlace, createPicture, listMobs, promptCharacterBuilder } = require('./prompt');
+const { promptBot, punchUpNarration, describePlace, createPicture, promptCharacterBuilder } = require('./prompt');
 const { listNames } = require('./names');
 const i18next = require('i18next');
 
@@ -525,16 +525,24 @@ let actionHandlers = {
     });
 
     let history = await db.all(
-      `SELECT * FROM messages WHERE room = ? ORDER BY id DESC LIMIT 10;`,
+      `SELECT * FROM messages WHERE room = ? ORDER BY id DESC LIMIT 5;`,
       [character.room]
     );
 
     if (ai) {
-      room.description = await describePlace(character, history, roomName);
+      let actorRoom = await db.get(
+        'SELECT * FROM rooms WHERE name = ?;',
+        character.room);
+      actorRoom.mobs = actorRoom.mobs ? actorRoom.mobs.split(',') : [];
+      console.log(actorRoom);
+      let described = await describePlace(character, history, roomName, actorRoom);
+      room.description = described.description;
+      room.mobs = described.mobs.join(',');
     } else {
       room.description = i18next.t('place.describe', {
         room: roomName,
       });
+      room.mobs = i18next.t('mob');
     }
 
     await db.run(
@@ -547,6 +555,7 @@ let actionHandlers = {
       text: `%go ${roomName}%`,
     });
 
+    /*
     if (ai) {
       room.mobs = await listMobs(room);
     } else {
@@ -556,6 +565,7 @@ let actionHandlers = {
       `UPDATE rooms SET mobs = ? WHERE id = ?;`,
       [room.mobs, id]
     );
+    */
 
     if (ai) {
       room.image_url = await createPicture(room.description);
@@ -690,6 +700,10 @@ let actionHandlers = {
       //text: `${character.name} used a shard and destroyed the ${character.room}.`,
     });
 
+    let links = await db.all(
+      'SELECT * FROM room_links WHERE room_id_1 = ?;',
+      room.id);
+
     const charactersInRoom = await db.all(
       `SELECT * FROM characters WHERE room = ? and hp > 0;`,
       [character.room]
@@ -698,7 +712,14 @@ let actionHandlers = {
     console.log(charactersInRoom);
 
     charactersInRoom.forEach(async (characterInRoom) => {
-      await executeAction(db, character, { name: 'go', text: originRoom });
+      let goTarget = originRoom;
+      if (links.length > 0) {
+        let link = links[Math.floor(Math.random() * links.length)];
+        goTarget = await db.get(
+          'SELECT name FROM rooms WHERE id = ?;',
+          link.room_id_2);
+      }
+      await executeAction(db, character, { name: 'go', text: goTarget });
     });
 
     await db.run(
@@ -744,6 +765,7 @@ let actionHandlers = {
       return;
     }
 
+    /*
     if (!await spendShard(db, character)) {
       await send(db, {
         speaker: 'Narrator',
@@ -753,6 +775,7 @@ let actionHandlers = {
       });
       return;
     }
+    */
 
     await db.run(
       'INSERT INTO room_links (room_id_1, room_id_2) VALUES (?, ?);',
@@ -814,6 +837,7 @@ let actionHandlers = {
       return;
     }
 
+    /*
     if (!await spendShard(db, character)) {
       await send(db, {
         speaker: 'Narrator',
@@ -823,6 +847,7 @@ let actionHandlers = {
       });
       return;
     }
+    */
 
     await db.run(
       'DELETE FROM room_links WHERE room_id_1 = ? AND room_id_2 = ?;',
@@ -1606,7 +1631,12 @@ const actionSuggestions = [
     let roomId = await db.get(
       'SELECT id FROM rooms WHERE name = ?;',
       [character.room]
-    ).then((room) => room.id);
+    );
+    if (roomId) {
+      roomId = roomId.id;
+    } else {
+      return [`%go ${originRoom}%`];
+    }
     const links = await db.all(
       'SELECT * FROM room_links WHERE room_id_1 = ?;',
       [roomId]
@@ -1648,6 +1678,10 @@ const actionSuggestions = [
       `SELECT * FROM rooms WHERE name = ?;`,
       [character.room]
     );
+
+    if (!room) {
+      return [];
+    }
 
     if (room.mobs.length === 0) {
       return ['%scry%'];
@@ -1770,6 +1804,10 @@ async function reportRoom(db, character) {
     `SELECT * FROM rooms WHERE name = ?;`,
     [character.room]
   );
+
+  if (!room) {
+    return;
+  }
 
   let characters = await db.all(
     `SELECT name FROM characters WHERE room = ? and hp > 0;`,
@@ -2292,6 +2330,7 @@ async function plantShard(db) {
 async function spawnMobInRoom(db, room) {
   console.log('spawnMobInRoom called');
   let mobs = room.mobs.split(',');
+  console.log(room.mobs, mobs);
   if (mobs.length === 0) {
     return;
   }

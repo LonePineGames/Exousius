@@ -97,13 +97,13 @@ Description: Chai is a faithful monk. He wears an orange robe and has a bald hea
   "link.noShards": "{{actor.name}} wanted to create a path to the {{targetRoom}}, but they didn't have any shards.",
   "link.alreadyExisted": "{{actor.name}} wanted to create a path to the {{targetRoom}}, but the path already existed.",
   "link.badRoom": "{{actor.name}} wanted to create a path to a placed called \"the {{targetRoom}}\", but that place didn't exist.",
-  "link.success": "{{actor.name}} used a shard and created a path to the {{targetRoom}}.",
+  "link.success": "{{actor.name}} created a path to the {{targetRoom}}.",
 
   "unlink.noShards": "{{actor.name}} wanted to destroyed the path to the {{targetRoom}}, but they didn't have any shards.",
   "unlink.didntExist": "{{actor.name}} wanted to destroyed the path to the {{targetRoom}}, but the path already didn't exist.",
   "unlink.badRoom": "{{actor.name}} wanted to destroyed the path to a placed called \"the {{targetRoom}}\", but that place didn't exist.",
   "unlink.wouldOrphan": "{{actor.name}} wanted to destroyed the path to the {{targetRoom}}, but that would leave the {{orphanedRoom}} without a path to the origin.",
-  "unlink.success": "{{actor.name}} used a shard and destroyed the path to the {{targetRoom}}.",
+  "unlink.success": "{{actor.name}} destroyed the path to the {{targetRoom}}.",
 
   "magic.changed.on": "{{actor.name}} turned on improved storytelling.",
   "magic.changed.off": "{{actor.name}} turned off improved storytelling.",
@@ -168,8 +168,10 @@ Description: Chai is a faithful monk. He wears an orange robe and has a bald hea
 %go ...% - to explore the world.
 %strike% - to fight
 %heal% - to heal
+%talk% - to make peace
 %summon Odel% (Cost: 1 shard) - Odel is good at searching for shards.
 %create ...% (Cost: 1 shard) - Creates a new land or location. You may create anything you imagine. New lands often have many shards to find, so the cost of a shard is a good investment.
+%link ...% (Free) - to create a path between two lands.
 %destroy% (Cost: 1 shard) - to destroy the land.
 %protect% (Cost: 1 shard) - to protect the land from minor enemies.
 %scry% (Cost: 1 shard) - to see what has happened here in the past.`,
@@ -273,5 +275,35 @@ Determine which step in the conversation you are on, and output a response appro
 
 ### Response
 Narrator: `,
+
+  /* prompt.describePlace */
+  "prompt.describePlace": `This is a text-based role playing game set in a medieval fantasy world.
+
+### History
+{{historyText}}
+
+### Context
+The {{roomName}} was a place in the world of Exousius. It was nearby the {{actor.room}}.
+
+{{actorRoomDescription}}
+
+### Instructions
+Output the place description in the following format:
+
+Name: {{roomName}}
+Description: Describe the {{roomName}}, which {{actor.name}} just created. Keep the description brief, under 40 words. Add drama and enticing language. Use past tense. Only describe the {{roomName}}. Do not mention {{actor.name}} or any other characters.
+Mobs:
+  - List the mobs in the {{roomName}}. If there are no mobs, write "None".
+  - Most rooms will have 3-5 mobs.
+
+### Example
+Name: Tavern
+Description: The tavern was a warm and inviting space, with a roaring fire and lively chatter. The cramped room was filled with low murmurs, laughing and the occasional clink of glasses.
+Mobs:
+  - rowdy bard
+  - angry barkeep
+  - giant rat
+  - crooked gambler
+`,
 };
 
