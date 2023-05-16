@@ -758,12 +758,15 @@ let actionHandlers = {
       [source.id, target.id]);
 
     if (existingLink) {
+      /*
       await send(db, {
         speaker: 'Narrator',
         key: 'link.alreadyExisted',
         actor: character,
         targetRoom: action.text,
       });
+      */
+      await executeAction(db, character, { name: 'go', text: action.text });
       return;
     }
 
@@ -793,6 +796,8 @@ let actionHandlers = {
       actor: character,
       targetRoom: action.text,
     });
+
+    await executeAction(db, character, { name: 'go', text: action.text });
   },
 
   async unlink(db, character, action) {

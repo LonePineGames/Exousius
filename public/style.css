@@ -336,7 +336,7 @@ body {
   box-shadow: 0 0 0.5rem #777;
 }
 
-.suggestion-go {
+.suggestion-go, .suggestion-link {
   background-color: var(--green-bg);
 }
 
@@ -358,7 +358,7 @@ body {
   color: black;
 }
 
-.suggestion-summon, .suggestion-scry, .suggestion-protect, .suggestion-create, .suggestion-link {
+.suggestion-summon, .suggestion-scry, .suggestion-protect, .suggestion-create {
   background-color: var(--purple-bg);
 }
 
