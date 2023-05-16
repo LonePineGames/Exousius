@@ -2383,7 +2383,7 @@ async function spawnMob(db, room) {
   let spawnNew = Math.random() < spawnRate * numRooms.count;
   console.log(`Spawn new mob: ${spawnNew}`);
   if (!spawnNew) {
-    //return;
+    return;
   }
 
   console.log(room);
@@ -2509,6 +2509,7 @@ async function runPrompts(db) {
 */
 
 async function runPrompts(db, targetRoom) {
+  console.log('runPrompts');
   let rooms = await db.all('SELECT * FROM rooms');
   let characters = await db.all('SELECT * FROM characters WHERE hp > 0');
 
@@ -2518,7 +2519,9 @@ async function runPrompts(db, targetRoom) {
     if (character.role === 'mob') {
       continue;
     } else if (character.role === 'user') {
-      if (targetRoom.name !== room.name) {
+      room.active = true;
+      //console.log(targetRoom, room.name, character.name);
+      if (targetRoom !== room.name) {
         room.supress = true;
       }
     } else if (character.role === 'bot') {

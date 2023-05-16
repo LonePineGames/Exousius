@@ -70,7 +70,7 @@ ${historyText}
 ${actor.name}: `;
 */
 
-  console.log(prompt);
+  //console.log(prompt);
 
   try {
     const completion = await openai.createChatCompletion({
@@ -136,7 +136,7 @@ Narrator: ${narration}
 ### Response
 Narrator: `;
   */
-  console.log(prompt);
+  //console.log(prompt);
 
   try {
     const completion = await openai.createChatCompletion({
@@ -190,7 +190,7 @@ The tavern was a warm and inviting space, with a roaring fire and lively chatter
 `;
 */
 
-  console.log(prompt);
+  //console.log(prompt);
 
   try {
     /*const completion = await openai.createChatCompletion({
@@ -374,7 +374,7 @@ Narrator: `;
   */
 
 //6. Realize you never asked for the player's name. Ask the player for their name. If the player gives a "bad name", demand that they give their "summoner name" instead. A bad name is a name that is too long (over 20 letters) or doesn't match the setting, especially real world names and inappropriate names. Also, the player may not pick the names Odel, Ekel, Mort or Temusea. (This setting already has characters with these names.) Be quick to help the player out by suggesting a setting appropriate name.
-  console.log(prompt);
+  //console.log(prompt);
   //return "Hello.";
   //return '%summon Player%';
 
