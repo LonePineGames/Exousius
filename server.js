@@ -537,7 +537,9 @@ let actionHandlers = {
       console.log(actorRoom);
       let described = await describePlace(character, history, roomName, actorRoom);
       room.description = described.description;
+      console.log("described", described);
       room.mobs = described.mobs.join(',');
+      console.log("room", room);
     } else {
       room.description = i18next.t('place.describe', {
         room: roomName,
@@ -546,8 +548,8 @@ let actionHandlers = {
     }
 
     await db.run(
-      `UPDATE rooms SET description = ? WHERE id = ?;`,
-      [room.description, id]
+      `UPDATE rooms SET description = ?, mobs = ? WHERE id = ?;`,
+      [room.description, room.mobs, id]
     );
 
     await send(db, {
@@ -568,7 +570,7 @@ let actionHandlers = {
     */
 
     if (ai) {
-      room.image_url = await createPicture(room.description);
+      room.image_url = await createPicture(room.name, room.description);
     } else {
       room.image_url = '';
     }
@@ -2516,6 +2518,7 @@ async function runPrompts(db, targetRoom) {
   //let numUsers = 0;
   for (let character of characters) {
     let room = rooms.find((room) => room.name === character.room);
+    if (!room) continue;
     if (character.role === 'mob') {
       continue;
     } else if (character.role === 'user') {

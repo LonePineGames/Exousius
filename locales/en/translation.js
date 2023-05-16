@@ -293,7 +293,8 @@ Output the place description in the following format:
 Name: {{roomName}}
 Description: Describe the {{roomName}}, which {{actor.name}} just created. Keep the description brief, under 40 words. Add drama and enticing language. Use past tense. Only describe the {{roomName}}. Do not mention {{actor.name}} or any other characters.
 Mobs:
-  - List the mobs in the {{roomName}}. If there are no mobs, write "None".
+  - List the mobs in the {{roomName}}.
+  - Mobs are low level enemies. They could be human, animal, or monster.
   - Most rooms will have 3-5 mobs.
 
 ### Example

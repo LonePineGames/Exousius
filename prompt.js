@@ -232,7 +232,7 @@ Mobs:
     console.error(error);
   }
 
-  return '';
+  return { description: {}, mobs: [] };
 }
 
 /*
@@ -281,9 +281,9 @@ The ${room.name} is home to many creatures, including:
 }
 */
 
-async function createPicture(description) {
+async function createPicture(roomName, description) {
   const response = await openai.createImage({
-    prompt: `A beautiful, highly detailed oil painting in the style of realism. Circa 1802. ${description}`,
+    prompt: `"The ${roomName}." A beautiful, highly detailed oil painting in the style of realism. Circa 1802. ${description}`,
     n: 1,
     size: "512x512",
   });
