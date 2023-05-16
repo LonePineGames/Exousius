@@ -193,13 +193,14 @@ The tavern was a warm and inviting space, with a roaring fire and lively chatter
   //console.log(prompt);
 
   try {
-    /*const completion = await openai.createChatCompletion({
+    const completion = await openai.createChatCompletion({
       model: "gpt-3.5-turbo",
       temperature: 0.8,
       max_tokens: 80,
       messages: [{role: "user", content: prompt}],
     });
-    const message = completion.data.choices[0].message.content;*/
+    const message = completion.data.choices[0].message.content;
+    /*
     const message = `Name: Fae School
 Description: The grand fae school was a towering wonder, with crystal spires and sparkling arches. The halls were filled with the soft glow of magic, and the classrooms bustled with eager students.
 Mobs:
@@ -207,6 +208,7 @@ Mobs:
   - strict headmaster
   - wise elder fae
   - curious human scholar`
+  */
     console.log('describePlace response: ', message);
     const lines = message.split("\n")
     let result = {
