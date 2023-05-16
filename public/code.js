@@ -103,11 +103,44 @@ const processQueue = () => {
 setInterval(processQueue, 250);
 
 function scrollToBottom() {
+/*
   setTimeout(() => {
     const messageContainer = document.getElementById('message-container');
     messageContainer.scrollTop = messageContainer.scrollHeight;
   }, 100);
+*/
 }
+
+let lastScrollTop = 0;
+let wasScrollingBack = false;
+function autoScroll() {
+  const container = document.getElementById('message-container');
+  const scrollTop = container.scrollTop;
+  let scrollingBack = scrollTop < lastScrollTop-10 || (scrollTop < lastScrollTop+10 && wasScrollingBack);
+  wasScrollingBack = scrollingBack;
+  lastScrollTop = scrollTop;
+
+  if (scrollingBack) {
+    document.body.classList.add('scrollingback');
+  } else {
+    document.body.classList.remove('scrollingback');
+
+    let target = container.scrollHeight;
+    let diff = target - scrollTop;
+    if (diff <= 0) {
+      // Nothing to do
+    } else if (diff > 1000) {
+      target = scrollTop + diff*.05;
+    } else if (diff > 100) {
+      target = scrollTop + 10;
+    } else {
+      target = scrollTop + 1;
+    }
+    container.scrollTop = target;
+  }
+}
+
+setInterval(autoScroll, 10);
 
 function setVhVariable() {
   let vh = window.innerHeight;

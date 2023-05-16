@@ -179,6 +179,7 @@ body {
   top: 0.5rem;
   margin: -1rem 0 -1rem 0;
   width: fit-content;
+  transition: height 0.5s ease-in-out, opacity 0.5s ease-in-out;
 }
 
 #message-container {
@@ -197,10 +198,19 @@ body {
   padding: 0.5rem;
   font-size: 1rem; /* This should prevent zooming on iOS */
   box-sizing: border-box;
-  background-color: var(--frame-bg);
+  /*background-color: var(--frame-bg);*/
+  background-color: rgba(0,0,0,0.5);
   color: white;
   font-family: 'Cardo', serif;
   font-style: italic;
+  transition: height 0.5s ease-in-out,
+    opacity 0.5s ease-in-out,
+    margin 0.5s ease-in-out;
+}
+
+.scrollingback #message-input, .scrollingback #player-name {
+  opacity: 0;
+  margin-top: -2.1rem;
 }
 
 #toolbar {
@@ -256,7 +266,11 @@ body {
   transition: height 2s ease-in-out;
 }
 
-.nocharacter #suggestions {
+.hascharacter #suggestions, .hascharacter #ui-container {
+  transition: height 0.5s ease-in-out, top 0.5s ease-in-out;
+}
+
+.nocharacter #suggestions, .scrollingback #suggestions {
   height: 0;
 }
 
@@ -437,8 +451,8 @@ button.script {
   transition: top 2s ease-in-out;
 }
 
-.nocharacter #ui-container {
-  top: -10rem;
+.nocharacter #ui-container, .scrollingback #ui-container {
+  top: -6rem;
 }
 
 .orb-container {
