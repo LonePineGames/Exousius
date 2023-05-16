@@ -41,6 +41,8 @@ async function initializeDatabase() {
     }
   }
 
+  await db.run('PRAGMA foreign_keys = ON;');
+
   await makeTable('characters', `
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       role TEXT NOT NULL,
@@ -79,8 +81,8 @@ async function initializeDatabase() {
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     room_id_1 INTEGER NOT NULL,
     room_id_2 INTEGER NOT NULL,
-    FOREIGN KEY (room_id_1) REFERENCES rooms (id),
-    FOREIGN KEY (room_id_2) REFERENCES rooms (id)`);
+    FOREIGN KEY (room_id_1) REFERENCES rooms (id) ON DELETE CASCADE,
+    FOREIGN KEY (room_id_2) REFERENCES rooms (id) ON DELETE CASCADE`);
 
   await makeTable('scripts', `
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -95,7 +97,7 @@ async function initializeDatabase() {
 
   if (originExists) {
     originRoom = await db.get('SELECT name FROM rooms ORDER BY ROWID ASC LIMIT 1').then((row) => row.name);
-    console.log(originRoom);
+    console.log('origin: ', originRoom);
     if (!originRoom) {
       throw 'origin not found';
     }
@@ -321,6 +323,44 @@ async function announceCharacter(db, character) {
       }
     });
   }
+}
+
+async function wouldDestroyOrphan(db, toDestroy) {
+  // Get links and rooms from db
+  const links = await db.all('SELECT * FROM room_links');
+  const rooms = await db.all('SELECT * FROM rooms');
+  if (!toDestroy) return;
+
+  // Transform data to adjacency list for easier processing
+  const adjacencyList = {};
+  links.forEach(link => {
+    if (!adjacencyList[link.room_id_1]) adjacencyList[link.room_id_1] = [];
+    //if (!adjacencyList[link.room_id_2]) adjacencyList[link.room_id_2] = [];
+    adjacencyList[link.room_id_1].push(link.room_id_2);
+    //adjacencyList[link.room_id_2].push(link.room_id_1);
+  });
+
+  // Perform DFS from origin, excluding the room that's about to be destroyed
+  const visited = {};
+  function dfs(current) {
+    visited[current] = true;
+    (adjacencyList[current] || []).forEach(neighbor => {
+      if (!visited[neighbor] && neighbor !== toDestroy.id) {
+        dfs(neighbor);
+      }
+    });
+  }
+  dfs(1); // assuming the origin room id is 1
+
+  // Check if there's a room that's not visited (i.e., would be orphaned)
+  for (const room of rooms) {
+    if (!visited[room.id] && room.id !== toDestroy.id) {
+      return room.name; // destroying room would orphan another room
+    }
+  }
+
+  // No room would be orphaned
+  return false;
 }
 
 let actionHandlers = {
@@ -599,6 +639,21 @@ let actionHandlers = {
       return;
     }
 
+    let room = await db.get(
+      'SELECT * FROM rooms WHERE name = ?;',
+      character.room
+    );
+    let orphan = await wouldDestroyOrphan(db, room);
+    if (orphan) {
+      await send(db, {
+        speaker: 'Narrator',
+        key: 'destroy.wouldOrphan',
+        actor: character,
+        orphanedRoom: orphan,
+      });
+      return;
+    }
+
     if (!await spendShard(db, character)) {
       await send(db, {
         speaker: 'Narrator',
@@ -628,9 +683,130 @@ let actionHandlers = {
     });
 
     await db.run(
-      `DELETE FROM rooms WHERE name = ?;`,
-      [character.room]
+      'DELETE FROM room_links WHERE room_id_1 = ? OR room_id_2 = ?',
+      [room.id, room.id]
     );
+
+    await db.run(
+      `DELETE FROM rooms WHERE id = ?;`,
+      [room.id]
+    );
+  },
+
+  async link(db, character, action) {
+    const source = await db.get(
+      'SELECT * FROM rooms WHERE name = ?;',
+      character.room);
+    const target = await db.get(
+      'SELECT * FROM rooms WHERE name = ?;',
+      action.text);
+
+    if (!target) {
+      await send(db, {
+        speaker: 'Narrator',
+        key: 'link.badRoom',
+        actor: character,
+        targetRoom: action.text,
+      });
+      return;
+    }
+
+    const existingLink = await db.get(
+      'SELECT * FROM room_links WHERE room_id_1 = ? AND room_id_2 = ?;',
+      [source.id, target.id]);
+
+    if (existingLink) {
+      await send(db, {
+        speaker: 'Narrator',
+        key: 'link.alreadyExisted',
+        actor: character,
+        targetRoom: action.text,
+      });
+      return;
+    }
+
+    if (!await spendShard(db, character)) {
+      await send(db, {
+        speaker: 'Narrator',
+        key: 'link.noShards',
+        actor: character,
+        summonName,
+      });
+      return;
+    }
+
+    await db.run(
+      'INSERT INTO room_links (room_id_1, room_id_2) VALUES (?, ?);',
+      [source.id, target.id]);
+
+    await db.run(
+      'INSERT INTO room_links (room_id_1, room_id_2) VALUES (?, ?);',
+      [target.id, source.id]);
+
+    await send(db, {
+      speaker: 'Narrator',
+      key: 'link.success',
+      actor: character,
+      targetRoom: action.text,
+    });
+  },
+
+  async unlink(db, character, action) {
+    const source = await db.get(
+      'SELECT * FROM rooms WHERE name = ?;',
+      character.room);
+    const target = await db.get(
+      'SELECT * FROM rooms WHERE name = ?;',
+      action.text);
+
+    if (!target) {
+      await send(db, {
+        speaker: 'Narrator',
+        key: 'unlink.badRoom',
+        actor: character,
+        targetRoom: action.text,
+      });
+      return;
+    }
+
+    const existingLink = await db.get(
+      'SELECT * FROM room_links WHERE room_id_1 = ? AND room_id_2 = ?;',
+      [source.id, target.id]);
+
+    if (!existingLink) {
+      await send(db, {
+        speaker: 'Narrator',
+        key: 'unlink.didntExist',
+        actor: character,
+        targetRoom: action.text,
+      });
+      return;
+    }
+
+    if (!await spendShard(db, character)) {
+      await send(db, {
+        speaker: 'Narrator',
+        key: 'unlink.noShards',
+        actor: character,
+        summonName,
+      });
+      return;
+    }
+
+    await db.run(
+      'DELETE FROM room_links WHERE room_id_1 = ? AND room_id_2 = ?;',
+      [source.id, target.id]);
+
+    await db.run(
+      'DELETE FROM room_links WHERE room_id_1 = ? AND room_id_2 = ?;',
+      [target.id, source.id]);
+
+    await send(db, {
+      speaker: 'Narrator',
+      key: 'unlink.success',
+      actor: character,
+      targetRoom: action.text,
+    });
   },
 
   async summon(db, character, action) {
@@ -1383,17 +1559,14 @@ const actionSuggestions = [
       'SELECT id FROM rooms WHERE name = ?;',
       [character.room]
     ).then((room) => room.id);
-    console.log('suggestions', roomId);
     const links = await db.all(
       'SELECT * FROM room_links WHERE room_id_1 = ?;',
       [roomId]
     );
-    console.log('links', links);
     let ids = links.map((link) => link.room_id_2);
     const rooms = await db.all(
       `SELECT * FROM rooms WHERE id IN (${ids.join(',')})`
     );
-    console.log('rooms', rooms);
 
     return rooms.map((room) => `%go ${room.name}%`);
   },

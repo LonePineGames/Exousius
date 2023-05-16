@@ -339,19 +339,7 @@ body {
   background-color: var(--green-bg);
 }
 
-.suggestion-summon {
-  background-color: var(--purple-bg);
-}
-
-.suggestion-scry {
-  background-color: var(--purple-bg);
-}
-
-.suggestion-protect {
-  background-color: var(--purple-bg);
-}
-
-.suggestion-search {
+.suggestion-search, .suggestion-give {
   background-color: var(--blue-bg);
 }
 
@@ -364,11 +352,7 @@ body {
   color: var(--red-bg);
 }
 
-.suggestion-give {
-  background-color: var(--blue-bg);
-}
-
-.suggestion-create {
+.suggestion-summon, .suggestion-scry, .suggestion-protect, .suggestion-create, .suggestion-link {
   background-color: var(--purple-bg);
 }
 

@@ -58,6 +58,7 @@ Description: Omod is a powerful wizard. He wears a robe and carries a wooden sta
 
   "destroy.cantOrigin": "But no one can destroy the origin, not even {{actor.name}}",
   "destroy.noShards": "But {{actor.name}} couldn't destroy the {{actor.room}} because they didn't have any shards.",
+  "destroy.wouldOrphan": "But {{actor.name}} couldn't destroy the {{actor.room}} because that would leave the {{orphanedRoom}} without a path to the origin.",
   "destroy.success": "{{actor.name}} used a shard and destroyed the {{actor.room}}.",
 
   "disappear.success": "{{actor.name}} decided to leave our heros alone.",
@@ -82,6 +83,16 @@ Description: Omod is a powerful wizard. He wears a robe and carries a wooden sta
   "heal.self": "{{actor.name}} healed themselves for {{heal}} health.",
   "heal.other": "{{actor.name}} healed {{targetName}} for {{heal}} health.",
   "heal.rest": "{{actor.name}} rested for a few hours, ate some food and tended to their wounds. {{actor.name}} healed {{heal}}HP.",
+
+  "link.noShards": "{{actor.name}} wanted to create a path to the {{targetRoom}}, but they didn't have any shards.",
+  "link.alreadyExisted": "{{actor.name}} wanted to create a path to the {{targetRoom}}, but the path already existed.",
+  "link.badRoom": "{{actor.name}} wanted to create a path to a placed called \"the {{targetRoom}}\", but that place didn't exist.",
+  "link.success": "{{actor.name}} used a shard and created a path to the {{targetRoom}}.",
+
+  "unlink.noShards": "{{actor.name}} wanted to destroyed the path to the {{targetRoom}}, but they didn't have any shards.",
+  "unlink.didntExist": "{{actor.name}} wanted to destroyed the path to the {{targetRoom}}, but the path already didn't exist.",
+  "unlink.badRoom": "{{actor.name}} wanted to destroyed the path to a placed called \"the {{targetRoom}}\", but that place didn't exist.",
+  "unlink.success": "{{actor.name}} used a shard and destroyed the path to the {{targetRoom}}.",
 
   "magic.changed.on": "{{actor.name}} turned on improved storytelling.",
   "magic.changed.off": "{{actor.name}} turned off improved storytelling.",
