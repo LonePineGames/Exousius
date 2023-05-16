@@ -92,6 +92,7 @@ Description: Omod is a powerful wizard. He wears a robe and carries a wooden sta
   "unlink.noShards": "{{actor.name}} wanted to destroyed the path to the {{targetRoom}}, but they didn't have any shards.",
   "unlink.didntExist": "{{actor.name}} wanted to destroyed the path to the {{targetRoom}}, but the path already didn't exist.",
   "unlink.badRoom": "{{actor.name}} wanted to destroyed the path to a placed called \"the {{targetRoom}}\", but that place didn't exist.",
+  "unlink.wouldOrphan": "{{actor.name}} wanted to destroyed the path to the {{targetRoom}}, but that would leave the {{orphanedRoom}} without a path to the origin.",
   "unlink.success": "{{actor.name}} used a shard and destroyed the path to the {{targetRoom}}.",
 
   "magic.changed.on": "{{actor.name}} turned on improved storytelling.",

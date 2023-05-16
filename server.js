@@ -16,7 +16,7 @@ const { getLocale, actionNameTable, actionNameTableReversed } = require('./inter
 let gameRate = 15000;
 let socketTable = [];
 let turns = true;
-let ai = false;
+let ai = true;
 let originRoom = 'origin';
 const maxShards = 100;
 
@@ -325,42 +325,48 @@ async function announceCharacter(db, character) {
   }
 }
 
-async function wouldDestroyOrphan(db, toDestroy) {
-  // Get links and rooms from db
+async function wouldOrphan(db, roomToExclude, linkToExclude) {
   const links = await db.all('SELECT * FROM room_links');
   const rooms = await db.all('SELECT * FROM rooms');
-  if (!toDestroy) return;
 
-  // Transform data to adjacency list for easier processing
   const adjacencyList = {};
   links.forEach(link => {
+    if (linkToExclude && ((link.room_id_1 === linkToExclude.room1.id && link.room_id_2 === linkToExclude.room2.id) ||
+        (link.room_id_1 === linkToExclude.room2.id && link.room_id_2 === linkToExclude.room1.id))) {
+      return;
+    }
     if (!adjacencyList[link.room_id_1]) adjacencyList[link.room_id_1] = [];
     //if (!adjacencyList[link.room_id_2]) adjacencyList[link.room_id_2] = [];
     adjacencyList[link.room_id_1].push(link.room_id_2);
     //adjacencyList[link.room_id_2].push(link.room_id_1);
   });
 
-  // Perform DFS from origin, excluding the room that's about to be destroyed
   const visited = {};
   function dfs(current) {
     visited[current] = true;
     (adjacencyList[current] || []).forEach(neighbor => {
-      if (!visited[neighbor] && neighbor !== toDestroy.id) {
+      if (!visited[neighbor] && (!roomToExclude || neighbor !== roomToExclude.id)) {
         dfs(neighbor);
       }
     });
   }
-  dfs(1); // assuming the origin room id is 1
+  dfs(1);
 
-  // Check if there's a room that's not visited (i.e., would be orphaned)
   for (const room of rooms) {
-    if (!visited[room.id] && room.id !== toDestroy.id) {
-      return room.name; // destroying room would orphan another room
+    if (!visited[room.id] && (!roomToExclude || room.id !== roomToExclude.id)) {
+      return room.name;
     }
   }
 
-  // No room would be orphaned
   return false;
+}
+
+async function wouldDestroyOrphan(db, room) {
+  return await wouldOrphan(db, room, null);
+}
+
+async function wouldUnlinkOrphan(db, room1, room2) {
+  return await wouldOrphan(db, null, { room1, room2 });
 }
 
 let actionHandlers = {
@@ -779,6 +785,18 @@ let actionHandlers = {
         key: 'unlink.didntExist',
         actor: character,
         targetRoom: action.text,
+      });
+      return;
+    }
+
+    let orphan = await wouldUnlinkOrphan(db, room);
+    if (orphan) {
+      await send(db, {
+        speaker: 'Narrator',
+        key: 'unlink.wouldOrphan',
+        actor: character,
+        targetRoom: action.text,
+        orphanedRoom: orphan,
       });
       return;
     }
