@@ -146,7 +146,7 @@ async function punchUp(db, message) {
   );
 
   let history = await db.all(
-    'SELECT * FROM messages WHERE room = ? ORDER BY timestamp DESC LIMIT 10;',
+    'SELECT * FROM messages WHERE room = ? ORDER BY timestamp DESC LIMIT 5;',
     [message.room]
   );
 
@@ -203,13 +203,15 @@ async function send(db, messageData) {
       [message.id, character.name]
     );
 
+    /*
     if (turns && character.name === message.character && character.role === 'user') {
       console.log("turn triggered");
       // Trigger a turn
       setTimeout(() => {
-        gameStep(db);
+        gameStep(db, character.room);
       }, 2000);
     }
+    */
   });
 
   io.to(message.room).emit('message', message);
@@ -249,6 +251,14 @@ async function executeAction(db, character, action) {
       actor: character,
       actionText,
     });
+  }
+
+  if (turns && character.role === 'user') {
+    console.log("turn triggered");
+    // Trigger a turn
+    setTimeout(() => {
+      gameStep(db, character.room);
+    }, 5000);
   }
 }
 
@@ -567,7 +577,10 @@ let actionHandlers = {
       ).then((row) => row.room);
 
       if (characterRoom === roomName) {
-        socket.emit('background-image', room.image_url);
+        socket.emit('room', {
+          name: room.name,
+          image: room.image_url,
+        });
       }
     });
 
@@ -965,6 +978,7 @@ let actionHandlers = {
       return;
     }
 
+    /*
     if (Math.random() < 0.5) {
       await send(db, {
         speaker: 'Narrator',
@@ -975,14 +989,30 @@ let actionHandlers = {
       });
       return;
     }
+    */
 
     let target = potentialTargets[Math.floor(Math.random() * potentialTargets.length)];
-    let damage = 1;
+    let potential = 1;
     if (character.shards > 0) {
-      let bonus = Math.ceil((1 + character.shards/3) * Math.random());
-      damage += bonus;
+      let bonus = Math.ceil(1 + character.shards/3);
+      potential += bonus;
     }
+
+    // damage = random between -2 and potential, inclusive
+    let damage = -2 + Math.round(Math.random()*(potential+2));
+
     console.log(character, target, damage);
+    if (damage <= 0) {
+      await send(db, {
+        speaker: 'Narrator',
+        key: targetName === '' ? 'strike.missed' : 'strike.target.missed',
+        actor: character,
+        targetName,
+        //text: `${character.name} tried to strike ${targetName} but missed.`,
+      });
+      return;
+    }
+
     let sacrifice = 0;
     target.hp -= damage;
 
@@ -1655,6 +1685,8 @@ const actionSuggestions = [
       heal.push('%heal%');
     }
 
+    heal.push('%talk%');
+
     return strike.concat(heal);
   },
 
@@ -1819,7 +1851,10 @@ async function sendRandomRoomImage(socket) {
   console.log(path);
 
   // send the file to the socket
-  socket.emit('background-image', path);
+  socket.emit('room', {
+    name: originRoom,
+    image: path,
+  });
 }
 
 async function characterBuilder(socket, cbHistory, msg) {
@@ -1946,6 +1981,9 @@ async function summonPlayer(db, socket, characterInfoText, cbHistory) {
     );
   }
 
+  console.log('summonPlayer calls connectCharacter');
+  await connectCharacter(db, socket, characterInfo.name);
+
   await send(db, {
     speaker: 'Narrator',
     key: 'summon.player.origin',
@@ -1953,9 +1991,6 @@ async function summonPlayer(db, socket, characterInfoText, cbHistory) {
     summonName: characterInfo.name,
     //text: `${characterInfo.name} has been summoned. ${characterInfo.name} enters the origin, the source of all places in this world.`,
   });
-
-  console.log('summonPlayer calls connectCharacter');
-  await connectCharacter(db, socket, characterInfo.name);
 
   for (let msg of cbHistory) {
     if (msg.character === 'Player') {
@@ -2261,6 +2296,12 @@ async function spawnMobInRoom(db, room) {
     return;
   }
 
+  // randomly select a mob
+  let mob = mobs[Math.floor(Math.random() * mobs.length)];
+  if (mob === '') {
+    return;
+  }
+
   let inRoom = await db.all(
     `SELECT * FROM characters WHERE room = ? and hp > 0;`,
     [room.name]
@@ -2270,8 +2311,6 @@ async function spawnMobInRoom(db, room) {
     return;
   }
 
-  // randomly select a mob
-  let mob = mobs[Math.floor(Math.random() * mobs.length)];
   let shards = Math.random() < 0.2 ? 1 : 0;
   let hp = 1 + Math.floor(Math.random() * 4);
 
@@ -2295,7 +2334,7 @@ async function spawnMobInRoom(db, room) {
   });
 }
 
-async function spawnMob(db) {
+async function spawnMob(db, room) {
   let numRooms = await db.get(
     `SELECT COUNT(*) as count FROM rooms WHERE mobs != '';`
   );
@@ -2305,14 +2344,24 @@ async function spawnMob(db) {
   let spawnNew = Math.random() < spawnRate * numRooms.count;
   console.log(`Spawn new mob: ${spawnNew}`);
   if (!spawnNew) {
-    return;
+    //return;
   }
 
-  let room = await db.get(
-    `SELECT * FROM rooms WHERE mobs != '' ORDER BY RANDOM() LIMIT 1;`
-  );
+  console.log(room);
+  if (!room) {
+    room = await db.get(
+      `SELECT * FROM rooms WHERE mobs != '' ORDER BY RANDOM() LIMIT 1;`
+    );
 
-  if (room === undefined) {
+    // if room is a string
+  } else if (typeof room === 'string') {
+    room = await db.get(
+      `SELECT * FROM rooms WHERE name = ?;`,
+      [room]
+    );
+  }
+
+  if (!room) {
     return;
   }
 
@@ -2420,23 +2469,29 @@ async function runPrompts(db) {
 }
 */
 
-async function runPrompts(db) {
+async function runPrompts(db, targetRoom) {
   let rooms = await db.all('SELECT * FROM rooms');
   let characters = await db.all('SELECT * FROM characters WHERE hp > 0');
 
   //let numUsers = 0;
   for (let character of characters) {
-    if (character.role === 'mob') continue;
-    //if (character.role === 'user') numUsers ++;
-
     let room = rooms.find((room) => room.name === character.room);
-    room.active = true;
+    if (character.role === 'mob') {
+      continue;
+    } else if (character.role === 'user') {
+      if (targetRoom.name !== room.name) {
+        room.supress = true;
+      }
+    } else if (character.role === 'bot') {
+      room.active = true;
+    }
+
     //if (room === undefined) continue;
     //if (character.role === 'user') room.users ++;
   }
 
   for (let room of rooms) {
-    if (!room.active) continue;
+    if (!room.active || room.supress) continue;
 
     //let mobsToPrompt = Math.max(1, room.users);
     //let botsToPrompt = Math.max(1, room.users);
@@ -2444,23 +2499,23 @@ async function runPrompts(db) {
     let bots = characters.filter((character) => character.role === 'bot' && character.room === room.name);
     if (bots.length > 0) {
       let bot = bots[Math.floor(Math.random() * bots.length)];
-      promptCharacter(db, bot);
+      await promptCharacter(db, bot);
     }
 
     let mobs = characters.filter((character) => character.role === 'mob' && character.room === room.name);
     if (mobs.length > 0) {
       let mob = mobs[Math.floor(Math.random() * mobs.length)];
-      promptCharacter(db, mob);
+      await promptCharacter(db, mob);
     }
   }
 }
 
-async function gameStep(db) {
+async function gameStep(db, room) {
   lastStepTime = new Date();
-  console.log('gameStep');
+  console.log('gameStep', room);
   console.trace();
   await plantShard(db);
-  await spawnMob(db);
-  await runPrompts(db);
+  await spawnMob(db, room);
+  await runPrompts(db, room);
 }
 

@@ -380,7 +380,7 @@ function startCooldown() {
   setTimeout(() => {
     suggestionsElement.classList.remove('cooldown');
     onCooldown = false;
-  }, 1000);
+  }, 10000);
 }
 
 let lastSuggestions = [];

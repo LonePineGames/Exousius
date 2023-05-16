@@ -24,14 +24,14 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 
 const pronounHint = `### Pronoun Hint
-he/him/his/his/himself
-she/her/her/hers/herself
-they/them/their/theirs/themselves
-it/it/its/its/itself
-fae/faem/faer/faers/faeself
-I/me/my/mine/myself
-you/you/your/yours/yourself
-we/us/our/ours/ourselves
+ he, him, his, his, himself
+ she, her, her, hers, herself
+ they, them, their, theirs, themselves
+ it, it, its, its, itself
+ fae, fae, faes, faes, faeself
+ I, me, my, mine, myself
+ you, you, your, yours, yourself
+ we, us, our, ours, ourselves
 
 Be attentive to pronouns. Example: Fae healed feaself for 2HP. Fae gave you 5 shards. We attacked faem for 5 HP damage.`;
 
@@ -106,7 +106,7 @@ async function punchUpNarration(narration, history, room, inRoom) {
     }).join('\n');
 
   const prompt = i18next.t('prompt.narration', {
-    room, inRoomText, descriptions, history, narration, pronounHint
+    room, inRoomText, descriptions, historyText, narration, pronounHint
   });
 
   /*
@@ -272,8 +272,9 @@ async function createPicture(description) {
 }
 
 async function promptCharacterBuilder(history) {
+  let historyText = history.map((h) => `${h.character}: ${h.text}`).join('\n');
   const prompt = i18next.t('prompt.characterBuilder', {
-    history
+    pronounHint, historyText
   });
 
   /*
@@ -334,12 +335,13 @@ Narrator: `;
   */
 
 //6. Realize you never asked for the player's name. Ask the player for their name. If the player gives a "bad name", demand that they give their "summoner name" instead. A bad name is a name that is too long (over 20 letters) or doesn't match the setting, especially real world names and inappropriate names. Also, the player may not pick the names Odel, Ekel, Mort or Temusea. (This setting already has characters with these names.) Be quick to help the player out by suggesting a setting appropriate name.
-  //console.log(prompt);
-  //return '%summon Odel%';
+  console.log(prompt);
+  //return "Hello.";
+  //return '%summon Player%';
 
   try {
     const completion = await openai.createChatCompletion({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4",
       temperature: 0.8,
       max_tokens: 400,
       messages: [{role: "user", content: prompt}],

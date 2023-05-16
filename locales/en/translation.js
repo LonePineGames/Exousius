@@ -41,11 +41,21 @@ Description: Tester Testerossa lives on 123 Test Avenue, Anytown, Ohio, USA. Exc
 %%% CHARACTER
 Name: Omod
 Title: He
-Description: Omod is a powerful wizard. He wears a robe and carries a wooden staff. 
+Description: Omod is a powerful wizard. He wears a blue robe and carries a wooden staff with a blue stone at the end, from which he casts lightning bolts.
 %%%
 
 %summon Omod%
+
+%%% CHARACTER
+Name: Chai
+Title: He
+Description: Chai is a faithful monk. He wears an orange robe and has a bald head. He fights with his long wooden staff.
+%%%
+
+%summon Chai%
+
 */
+
 
   "action.did": "{{actor.name}} did: {{actionText}}.",
   "place.describe": "It was a beautiful {{room}}.",
@@ -195,8 +205,6 @@ Output only {{actor.name}}'s response. Keep the response brief, under 20 words. 
 
 {{descriptions}}
 
-{{pronounHint}}
-
 ### Instructions
 Improve the following narration. Keep the response brief, under 20 words. Preserve all details, especially numbers. Fix any grammatical mistakes, capitalization and pluralization issues, and so on. Add drama and enticing language. Make the general more specific (eg "ate food" => "had a wonderful meal of cooked rabbit"). Only describe the events mentioned in the original narration. Use past tense. Connect the narration to the history and context. Make it sound like an old fairy tale.
 
@@ -213,5 +221,57 @@ Narrator: {{narration}}
 ### Response
 Narrator: `,
 
+  /* prompt.characterBuilder */
+  "prompt.characterBuilder": `This is a text-based role playing game set in a medieval fantasy world called Exousius. You are the narrator. You must gather information from the player to build their character. The player may be new to these lands, or they may be a seasoned warrior.
+
+### Context
+Exousius is a land of war. Before there was peace in the kingdom. But then came the discovery of soul summoning. Wizards and warriors searched far and wide for the precious soul shards, and were more than willing to kill for them. It is with sadness that you must bring the player into this world, for you need the player to fight in this senseless war.
+
+### Instructions
+Lead the player in conversation through the following steps:
+
+1. Apologize to the player for the need to bring them here.
+
+2. Determine if the player is new to these lands, or if they are a seasoned warrior.
+
+3. Ask the player if they are skilled in magic, or in the sword. Use their response to determine their character (wizard, knight, rouge, etc).
+
+4. Determine the character's clothing, distinguishing features, and backstory. This also does not matter for gameplay.
+
+5. Determine the player's weapon. This also does not matter for gameplay.
+
+6. Realize that you have forgotten to ask the player's name. Ask the player for their name -- but, their summoner's name, not their real name. Be willing to suggest a name if the player seems uncreative. Prefer short names. If the player gives a name like "Grimnor The Terrible", shorten it to just "Grimnor".
+
+7. Ask "How do you prefer to be addressed? As 'he' or 'she'... or 'fae' perhaps?" Do not use the word "pronouns". The player may choose another title such as "they", "you", "it", etc.
+
+8. Output the character's information in the following format:
+
+%%% CHARACTER
+Name: Player Name (Short)
+Title: She
+Description: The description of the player's character. Start with the character's name. Write in past tense. Use the character's pronouns. Do not describe the character as "something-like" (eg Dumbledore-like). Instead, use precise descriptions such as "has an old face, with long grey and black hair." Include the player's weapon. The description should be about 30 words long, all on one line.
+%%%
+
+(You MUST use the triple percent signs to delimit the output.)
+
+Example: Alice the Pirate Princess
+
+%%% CHARACTER
+Name: Alice
+Title: She
+Description: She was known as Alice, the Pirate Princess. Once a princess, she became a swashbuckling pirate. She wielded a cutlass and a pistol. Alice had long, flowing hair and a scar on her left cheek.
+%%%
+
+9. Confirm that the player is happy with their character. If not, change the character to match the player's wishes. Output the character's information again in the same format as above.
+
+10. Thank the player for their heroism, and welcome them to Exousius. Output the character information again. Then output %summon Player Name%. Once you output %summon ...%, the player will be sent to the world of Exousius.
+
+Determine which step in the conversation you are on, and output a response approapriate for that step.
+
+### History
+{{historyText}}
+
+### Response
+Narrator: `,
 };
 
