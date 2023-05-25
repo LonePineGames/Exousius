@@ -158,7 +158,7 @@ Description: Chai is a faithful monk. He wears an orange robe and has a bald hea
   "summon.noScript": "But {{actor.name}} couldn't summon {{summonName}} because there isn't a script named {{summonName}}.",
   "summon.noShards": "But {{actor.name}} couldn't summon {{summonName}} because they didn't have any shards.",
   "summon.success": "{{actor.name}} used a shard and summoned {{summonName}}.",
-  "summon.player.origin": "{{summonName}} was summoned. {{summonName}} appeared in the origin.",
+  "summon.player.origin": "I summoned {{summonName}}. {{summonName}} appeared in the origin.",
 
   /* tutorial */
 
